@@ -2,46 +2,69 @@
 # Project: 2023 Spring Semester SOS Project
 # Programmer: Ian Rowse <imrnnc@umsystem.edu>
 
+from collections.abc import Sequence
 from enum import Enum
 
 class Mark(Enum):
-    EMPTY = 0
-    S     = 1
-    O     = 2
+    NONE  = 0
+    EMPTY = 1
+    S     = 2
+    O     = 3
 
+    def __lt__(self, other):
+        if self.__class__ is not other.__class__:
+            return NotImplemented
+        elif self == Mark.S and other == Mark.O:
+            return False
+        else:
+            return self.value < other.value
+
+    def __gt__(self, other):
+        if self.__class__ is not other.__class__:
+            return NotImplemented
+        elif self == Mark.O and other == Mark.S:
+            return False
+        else:
+            return self.value > other.value
 
 class SOS:
-    def __init__(self, p1, p2, playerID: int) -> None:
+    def __init__(self, p1: Sequence, p2: Sequence, player_id: int) -> None:
         self.p1 = p1
         self.p2 = p2
-        self.playerID = playerID
+        self.player_id = player_id
+
+    def __repr__(self) -> None:
+        return f'SOS({self.p1.__repr__()}, {self.p2.__repr__()})'
+
+    def __str__(self) -> None:
+        return f'({self.p1.__str__()}, {self.p2.__str__()})'
 
 
 class Player:
-    def __init__(self, name: str, hue) -> None:
+    def __init__(self, name: str, hue: int) -> None:
         self.name = name
         self.hue = hue
         self.score = 0
 
 
 class Board:
-    def __init__(self, numCols: int = 8, numRows: int = 8) -> None:
-        self.numCols = numCols
-        self.numRows = numRows
-        self.grid = [Mark.EMPTY] * (numCols * numRows)
-        self.markCount = 0
+    def __init__(self, num_cols: int = 8, num_rows: int = 8) -> None:
+        self.num_cols = num_cols
+        self.num_rows = num_rows
+        self.grid = [Mark.EMPTY] * (num_cols * num_rows)
+        self.mark_count = 0
 
-        self.players = [Player("One",   0), 
+        self.players = [Player("One",   0),
                         Player("Two", 240)]
-        self.sosList = []
+        self.sos_list = []
         self.turn = 0
 
     def __str__(self):
-        temp = ' ' + '-' * self.numCols + '\n'
-        for y in range(self.numRows):
+        temp = ' ' + '-' * self.num_cols + '\n'
+        for y in range(self.num_rows):
             temp += '|'
-            for x in range(self.numCols):
-                match self.getMark(x, y):
+            for x in range(self.num_cols):
+                match self.get_mark(x, y):
                     case Mark.EMPTY:
                         temp += ' '
                     case Mark.S:
@@ -49,39 +72,46 @@ class Board:
                     case Mark.O:
                         temp += 'O'
             temp += '|\n'
-        temp += " " + "-" * self.numCols
+        temp += " " + "-" * self.num_cols
         return temp
 
-    def inBounds(self, col: int, row: int) -> bool:
-        return (0 <= col < self.numCols and
-                0 <= row < self.numRows)
+    def in_bounds(self, col: int, row: int) -> bool:
+        return (0 <= col < self.num_cols and
+                0 <= row < self.num_rows)
 
-    def outOfBounds(self, col: int, row: int) -> bool:
-        return not self.inBounds(col, row)
+    def out_of_bounds(self, col: int, row: int) -> bool:
+        return not self.in_bounds(col, row)
 
-    # Assumes that col and row are in bounds
-    def getMark(self, col: int, row: int) -> Mark:
-        return self.grid[(row * self.numCols) + col]
+    def get_mark(self, col: int, row: int) -> Mark:
+        if self.in_bounds(col, row):
+            return self.grid[(row * self.num_cols) + col]
+        else:
+            return Mark.NONE
 
-    # Assumes that col and row are in bounds
-    def setMark(self, col: int, row: int, mark: Mark) -> None:
-        self.grid[(row * self.numCols) + col] = mark
+    # Does not automatically remove broken SOSes
+    def set_mark(self, col: int, row: int, mark: Mark) -> None:
+        if self.in_bounds(col, row) and mark != Mark.NONE:
+            self.grid[(row * self.num_cols) + col] = mark
 
-        # If one or the other is empty, but not neither
-        if (mark == Mark.EMPTY) != (self.getMark(col, row) == Mark.EMPTY):
-            self.markCount += (-1 if mark == Mark.EMPTY else 1)
+            # If one or the other is empty, but not neither
+            if mark > self.get_mark(col, row):
+                self.mark_count += 1
+            elif mark < self.get_mark(col, row):
+                self.mark_count -= 1
 
     def clear(self) -> None:
-        self.grid = [Mark.EMPTY] * (self.numCols * self.numRows)
+        self.grid = [Mark.EMPTY] * (self.num_cols * self.num_rows)
+        self.mark_count = 0
+        self.sos_list = []
 
     # Assumes that col and row are in bounds
-    def makeMove(self, col: int, row: int, mark: Mark) -> bool:
-        if mark != Mark.EMPTY and self.getMark(col, row) == Mark.EMPTY:
-            self.setMark(col, row, mark)
-            
-            newSOSList = self.createsSOS(col, row, mark)
-            self.players[self.turn].score += len(newSOSList)
-            self.sosList.extend(newSOSList)
+    def make_move(self, col: int, row: int, mark: Mark) -> bool:
+        if mark > Mark.EMPTY and self.get_mark(col, row) == Mark.EMPTY:
+            self.set_mark(col, row, mark)
+
+            new_sos_list = self.creates_sos(col, row, mark)
+            self.players[self.turn].score += len(new_sos_list)
+            self.sos_list.extend(new_sos_list)
 
             self.turn = (self.turn + 1) % len(self.players)
 
@@ -92,7 +122,7 @@ class Board:
 
     # Assumes that col and row are in bounds
     # Assumes that the space is empty
-    def createsSOS(self, col: int, row: int, mark: Mark) -> list[SOS]:
+    def creates_sos(self, col: int, row: int, mark: Mark) -> list[SOS]:
         offsets = ((-1,-1), # north west
                    ( 0,-1), # north
                    ( 1,-1), # north east
@@ -100,48 +130,62 @@ class Board:
                    ( 1, 1), # south east
                    ( 0, 1), # south
                    (-1, 1), # south west
-                   (-1, 0)) #       west
+                   (-1, 0)) #       wes
 
-        sosList = []
+        sos_list = []
 
         match mark:
             case Mark.S:
                 for i in range(8):
-                    xOff = offsets[i][0]
-                    yOff = offsets[i][1]
+                    x_off = offsets[i][0]
+                    y_off = offsets[i][1]
 
-                    if (self.inBounds(col + xOff*2, row + yOff*2) and
-                        self.getMark( col + xOff  , row + yOff  ) == Mark.O and
-                        self.getMark( col + xOff*2, row + yOff*2) == Mark.S):
+                    if (self.get_mark(col + x_off, row + y_off) == Mark.O and
+                        self.get_mark(col + x_off*2, row + y_off*2) == Mark.S):
 
-                        sosList.append(SOS((col, row), 
-                                           (col + xOff*2, row + yOff*2), 
-                                           self.turn))
-
+                        sos_list.append(SOS((col, row),
+                                            (col + x_off*2, row + y_off*2),
+                                            self.turn))
             case Mark.O:
                 for i in range(4):
-                    xOff = offsets[i][0]
-                    yOff = offsets[i][1]
+                    x_off = offsets[i][0]
+                    y_off = offsets[i][1]
 
-                if (self.inBounds(col + xOff, row + yOff) and
-                    self.inBounds(col - xOff, row - yOff) and
-                    self.getMark( col + xOff, row + yOff) == Mark.S and
-                    self.getMark( col - xOff, row - yOff) == Mark.S):
-                        
-                    sosList.append(SOS((col + xOff, row + yOff), 
-                                       (col - xOff, row - yOff), 
-                                       self.turn))
+                    if (self.get_mark(col + x_off, row + y_off) == Mark.S and
+                        self.get_mark(col - x_off, row - y_off) == Mark.S):
 
-        return sosList
+                        sos_list.append(SOS((col + x_off, row + y_off),
+                                            (col - x_off, row - y_off),
+                                            self.turn))
+        return sos_list
 
-    def reset(self, numCols: int = -1, numRows: int = -1):
-        if numCols >= 3 and numRows >= 3:
-            self.numCols = numCols
-            self.numRows = numRows
-        self.grid = [Mark.EMPTY] * (self.numCols * self.numRows)
+    def simple_end(self) -> bool:
+        return len(self.sos_list) > 0 or general_end()
 
+    def simple_victor(self) -> int:
+        if len(self.sos_list) > 0:
+            return self.sos_list[0].player_id
+        else:
+            return -1
 
+    def general_end(self) -> bool:
+        return self.mark_count == self.num_cols * self.num_rows:
 
+    def general_victors(self) -> List(int):
+        victors = []
+        if self.mark_count == self.num_cols * self.num_rows:
+            highscore = 1
+            for player in self.players:
+                if player.score >= highscore:
+                    if player.score > highscore:
+                        highscore = player.score
+                        victors.clear()
+                    victors.append(player)
+        return victors
 
-
-
+    def reset(self, num_cols: int = -1, num_rows: int = -1) -> None:
+        if num_cols >= 3 and num_rows >= 3:
+            self.num_cols = num_cols
+            self.num_rows = num_rows
+        self.clear()
+        self.turn = 0
