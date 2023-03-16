@@ -159,29 +159,31 @@ class Board:
                                             self.turn))
         return sos_list
 
+    def general_end(self) -> bool:
+        return self.mark_count == self.num_cols * self.num_rows:
+
     def simple_end(self) -> bool:
-        return len(self.sos_list) > 0 or general_end()
+        return len(self.sos_list) > 0 or self.general_end()
+
+    # Can return a victor even when game isn't over
+    # Useful for listing current leader(s)
+    def general_victors(self) -> List(int):
+        victors = []
+        highscore = 0
+
+        for player in self.players:
+            if player.score >= highscore:
+                if player.score > highscore:
+                    highscore = player.score
+                    victors.clear()
+                victors.append(player)
+        return victors
 
     def simple_victor(self) -> int:
         if len(self.sos_list) > 0:
             return self.sos_list[0].player_id
         else:
             return -1
-
-    def general_end(self) -> bool:
-        return self.mark_count == self.num_cols * self.num_rows:
-
-    def general_victors(self) -> List(int):
-        victors = []
-        if self.mark_count == self.num_cols * self.num_rows:
-            highscore = 1
-            for player in self.players:
-                if player.score >= highscore:
-                    if player.score > highscore:
-                        highscore = player.score
-                        victors.clear()
-                    victors.append(player)
-        return victors
 
     def reset(self, num_cols: int = -1, num_rows: int = -1) -> None:
         if num_cols >= 3 and num_rows >= 3:
