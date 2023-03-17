@@ -9,9 +9,27 @@ from enum import Enum
 
 #class Vector:
 #    """For storing coordinates"""
-#    def __init__(self, x, y):
+#    def __init__(self, x: int, y: int) -> None:
 #        self.x = x
 #        self.y = y
+#
+#    def __add__(self, other) -> Vector:
+#        if self.__class__ is not other.__class__:
+#            return NotImplemented
+#        else:
+#            return Vector(self.x + other.x, self.y + other.y)
+#
+#    def __sub__(self, other) -> Vector:
+#        if self.__class__ is not other.__class__:
+#            return NotImplemented
+#        else:
+#            return Vector(self.x - other.x, self.y - other.y)
+#
+#    def __mul__(self, scalar: int) -> Vector:
+#        if not isinstance(scalar, int):
+#            return NotImplemented
+#        else:
+#            return Vector(self.x * scalar, self.y * scalar)
 
 class Mark(Enum):
     """Possible states of an SOS grid space."""
