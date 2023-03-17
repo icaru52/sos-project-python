@@ -2,24 +2,36 @@
 # Project: 2023 Spring Semester SOS Project
 # Programmer: Ian Rowse <imrnnc@umsystem.edu>
 
+"""Basic classes and methods for an SOS game. User interface not included."""
+
 from collections.abc import Sequence
 from enum import Enum
 
+#class Vector:
+#    """For storing coordinates"""
+#    def __init__(self, x, y):
+#        self.x = x
+#        self.y = y
+
 class Mark(Enum):
-    NONE  = 0
+    """Possible states of an SOS grid space."""
+
+    NONE  = 0 # used for returning out of bounds spaces
     EMPTY = 1
     S     = 2
     O     = 3
 
-    def __lt__(self, other):
+    def __lt__(self, other) -> bool:
+        """NONE < EMPTY < S == O"""
         if self.__class__ is not other.__class__:
             return NotImplemented
-        elif self == Mark.S and other == Mark.O:
+        elif self == Mark.S:
             return False
         else:
             return self.value < other.value
 
-    def __gt__(self, other):
+    def __gt__(self, other) -> bool:
+        """S == O > EMPTY > NONE"""
         if self.__class__ is not other.__class__:
             return NotImplemented
         elif self == Mark.O and other == Mark.S:
@@ -27,51 +39,78 @@ class Mark(Enum):
         else:
             return self.value > other.value
 
+
 class SOS:
-    def __init__(self, p1: Sequence, p2: Sequence, player_id: int) -> None:
+    """Stores the start coordinate, end coordinate, and player id of an SOS."""
+    def __init__(self,
+                 p1: Sequence[int],
+                 p2: Sequence[int],
+                 player_id: int) -> None:
         self.p1 = p1
         self.p2 = p2
         self.player_id = player_id
 
     def __repr__(self) -> None:
-        return f'SOS({self.p1.__repr__()}, {self.p2.__repr__()})'
+        return f"SOS({self.p1!r}, {self.p2!r}, {self.player_id!r})"
 
     def __str__(self) -> None:
-        return f'({self.p1.__str__()}, {self.p2.__str__()})'
+        return f"(SOS from {self.p1} to {self.p2} by player {self.player_id})"
 
 
 class Player:
-    def __init__(self, name: str, hue: int) -> None:
+    """Stores a player's name, what hue to use in a gui, and their score."""
+    def __init__(self, name: str, hue: int = 0) -> None:
         self.name = name
         self.hue = hue
         self.score = 0
 
+    def __repr__(self) -> None:
+        return f"Player({self.name}, {self.hue})"
+
+    def __str__(self) -> None:
+        return f"({self.name} has hue {self.hue} and has {self.score} points)"
+
 
 class Board:
-    def __init__(self, num_cols: int = 8, num_rows: int = 8) -> None:
+    """SOS game."""
+    def __init__(self,
+                 num_cols: int = 8,
+                 num_rows: int = 8,
+                 players: list[Player] = None) -> None:
+
+    #def __init__(self,
+    #             dimensions: tuple[int, int],
+    #             players: list[Player] = None) -> None:
+
         self.num_cols = num_cols
         self.num_rows = num_rows
         self.grid = [Mark.EMPTY] * (num_cols * num_rows)
         self.mark_count = 0
 
-        self.players = [Player("One",   0),
-                        Player("Two", 240)]
+        if players is None:
+            self.players = [Player("One", 0), Player("Two", 240)]
+        else:
+            self.players = players
+
         self.sos_list = []
         self.turn = 0
 
-    def __str__(self):
-        temp = ' ' + '-' * self.num_cols + '\n'
+    def __repr__(self) -> None:
+        return f"Board({self.num_cols}, {self.num_rows}, {self.players!r})"
+
+    def __str__(self) -> None:
+        temp = " " + "-" * self.num_cols + "\n"
         for y in range(self.num_rows):
-            temp += '|'
+            temp += "|"
             for x in range(self.num_cols):
                 match self.get_mark(x, y):
                     case Mark.EMPTY:
-                        temp += ' '
+                        temp += " "
                     case Mark.S:
-                        temp += 'S'
+                        temp += "S"
                     case Mark.O:
-                        temp += 'O'
-            temp += '|\n'
+                        temp += "O"
+            temp += "|\n"
         temp += " " + "-" * self.num_cols
         return temp
 
@@ -79,10 +118,14 @@ class Board:
         return (0 <= col < self.num_cols and
                 0 <= row < self.num_rows)
 
+    #def in_bounds(self, coords: Sequence[int]) -> bool:
+    #    return (0 <= coords[0] < self.dimensions[0] and
+    #            0 <= coords[1] < self.dimensions[1])
+
     def out_of_bounds(self, col: int, row: int) -> bool:
         return not self.in_bounds(col, row)
 
-    def get_mark(self, col: int, row: int) -> Mark:
+    def get_mark(self, col: int = -1, row: int = -1) -> Mark:
         if self.in_bounds(col, row):
             return self.grid[(row * self.num_cols) + col]
         else:
@@ -123,6 +166,12 @@ class Board:
     # Assumes that col and row are in bounds
     # Assumes that the space is empty
     def creates_sos(self, col: int, row: int, mark: Mark) -> list[SOS]:
+        sos_list = []
+
+        if self.out_of_bounds(col, row):
+            return sos_list
+
+
         offsets = ((-1,-1), # north west
                    ( 0,-1), # north
                    ( 1,-1), # north east
@@ -130,16 +179,11 @@ class Board:
                    ( 1, 1), # south east
                    ( 0, 1), # south
                    (-1, 1), # south west
-                   (-1, 0)) #       wes
-
-        sos_list = []
+                   (-1, 0)) #       west
 
         match mark:
             case Mark.S:
-                for i in range(8):
-                    x_off = offsets[i][0]
-                    y_off = offsets[i][1]
-
+                for x_off, y_off in offsets:
                     if (self.get_mark(col + x_off, row + y_off) == Mark.O and
                         self.get_mark(col + x_off*2, row + y_off*2) == Mark.S):
 
@@ -147,10 +191,7 @@ class Board:
                                             (col + x_off*2, row + y_off*2),
                                             self.turn))
             case Mark.O:
-                for i in range(4):
-                    x_off = offsets[i][0]
-                    y_off = offsets[i][1]
-
+                for x_off, y_off in offsets[:4]:
                     if (self.get_mark(col + x_off, row + y_off) == Mark.S and
                         self.get_mark(col - x_off, row - y_off) == Mark.S):
 
@@ -160,14 +201,14 @@ class Board:
         return sos_list
 
     def general_end(self) -> bool:
-        return self.mark_count == self.num_cols * self.num_rows:
+        return self.mark_count == self.num_cols * self.num_rows
 
     def simple_end(self) -> bool:
         return len(self.sos_list) > 0 or self.general_end()
 
     # Can return a victor even when game isn't over
     # Useful for listing current leader(s)
-    def general_victors(self) -> List(int):
+    def general_victors(self) -> list[int]:
         victors = []
         highscore = 0
 
@@ -191,3 +232,4 @@ class Board:
             self.num_rows = num_rows
         self.clear()
         self.turn = 0
+
