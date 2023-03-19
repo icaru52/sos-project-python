@@ -57,6 +57,24 @@ class Mark(Enum):
         else:
             return self.value > other.value
 
+    def __le__(self, other) -> bool:
+        """NONE <= EMPTY <= S != O"""
+        if self.__class__ is not other.__class__:
+            return NotImplemented
+        elif self == Mark.S and other == Mark.O:
+            return False
+        else:
+            return self.value <= other.value
+
+    def __ge__(self, other) -> bool:
+        """S != O >= EMPTY >= NONE"""
+        if self.__class__ is not other.__class__:
+            return NotImplemented
+        elif self == Mark.O and other == Mark.S:
+            return False
+        else:
+            return self.value >= other.value
+
 
 class SOS:
     """Stores the start coordinate, end coordinate, and player id of an SOS."""
@@ -64,6 +82,16 @@ class SOS:
                  p1: Sequence[int],
                  p2: Sequence[int],
                  player_id: int) -> None:
+
+        if len(p1) <= 0 or len(p2) <= 0:
+            raise ValueError("points must have the same length/dimensionality")
+        
+        if p1 == p2:
+            raise ValueError("points cannot be the same")
+
+        if player_id < 0:
+            raise ValueError("player id may not be negative")
+
         self.p1 = p1
         self.p2 = p2
         self.player_id = player_id
@@ -78,6 +106,10 @@ class SOS:
 class Player:
     """Stores a player's name, what hue to use in a gui, and their score."""
     def __init__(self, name: str, hue: int = 0) -> None:
+
+        if hue < 0:
+            raise ValueError("player hue may not be negative")
+
         self.name = name
         self.hue = hue
         self.score = 0
