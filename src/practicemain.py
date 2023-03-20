@@ -6,6 +6,7 @@
 
 from enum import Enum
 from board import Board, Mark
+from game import Game
 
 if __name__ == "__main__":
     board = Board(8, 8)
@@ -22,5 +23,9 @@ if __name__ == "__main__":
     print(board)
     #print(board.sos_list)
     for i in board.sos_list: print(i)
+
+
+    game = Game()
+    game.start()
 
 
