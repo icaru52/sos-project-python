@@ -28,7 +28,7 @@ class Button:
 
     def draw(self, surface):
         pygame.draw.rect(surface, (255, 100, 100), self.rect, 2)
-        
+
         font = pygame.font.SysFont(None, int(self.rect[3]))
         text = font.render(self.text, 1, (255, 255, 255))
         surface.blit(text,
@@ -37,7 +37,7 @@ class Button:
 
 
 class Game:
-    """"""
+    """GUI for displaying and interacting with SOS game board"""
 
     def __init__(self,
                  window_width:  int = 512,
@@ -54,7 +54,7 @@ class Game:
 
         self.size = min(res)
         self.gap_size = self.size*0.01
-        self.tile_size = ((self.size - self.gap_size) / 
+        self.tile_size = ((self.size - self.gap_size) /
                           self.board.num_cols - self.gap_size)
 
         self.cells = []
@@ -66,7 +66,7 @@ class Game:
                 tile_x = x_offset + (self.tile_size + self.gap_size)*x
                 tile_y = y_offset + (self.tile_size + self.gap_size)*y
 
-                self.cells.append(Button([tile_x, tile_y, 
+                self.cells.append(Button([tile_x, tile_y,
                                           self.tile_size, self.tile_size]))
 
         self.state = "play"
@@ -105,8 +105,6 @@ class Game:
                                 cell_y = math.floor((pos[1] - (self.surface.get_height() - self.size + self.gap_size)/2) / (self.tile_size + self.gap_size))
                                 if (0 <= cell_x < self.board.num_cols and
                                     0 <= cell_y < self.board.num_rows):
-                                    
-                                    print(cell_x, cell_y)
 
                                     match e.button:
                                         case 1:
@@ -115,8 +113,7 @@ class Game:
                                         case 3:
                                             if self.board.make_move(cell_x, cell_y, board.Mark.O):
                                                 self.cells[(cell_y * self.board.num_cols) + cell_x].text = "O"
-                        
-            
+
             match self.state:
                 case "menu":
                     self.menu()

@@ -1,11 +1,14 @@
-# File: board.py
+# File: test_board.py
 # Project: 2023 Spring Semester SOS Project
 # Programmer: Ian Rowse <imrnnc@umsystem.edu>
+
+"""tests for the SOS board class"""
 
 import unittest
 import board
 
 class TestMark(unittest.TestCase):
+    """tests for the Mark Enum"""
 
     def test_s_lt_o(self):
         self.assertFalse(board.Mark.S < board.Mark.O)
@@ -36,6 +39,8 @@ class TestMark(unittest.TestCase):
 
 
 class TestSOS(unittest.TestCase):
+    """tests for the SOS helper class"""
+
     """
     def test_tuple(self):
         board.SOS((0, 0), (3, 3), 0)
@@ -62,6 +67,7 @@ class TestSOS(unittest.TestCase):
 
 
 class TestPlayer(unittest.TestCase):
+    """tests for the Player helper class"""
 
     def test_name(self):
         self.assertEqual(board.Player("Test").name, "Test")
@@ -77,7 +83,8 @@ class TestPlayer(unittest.TestCase):
 
 
 class TestBoard(unittest.TestCase):
-    
+    """tests for the core SOS Board class"""
+
     def test_create_board_default_size(self):
         self.assertEqual(board.Board().grid, [board.Mark.EMPTY] * (8 * 8))
 
@@ -105,7 +112,7 @@ class TestBoard(unittest.TestCase):
         with self.assertRaises(IndexError):
             test_board.players[2]
 
-    def test_create_board_default_players(self):
+    def test_create_board_three_players(self):
         test_board = board.Board(8, 8, [board.Player("Tom",    60),
                                         board.Player("Dick",  120),
                                         board.Player("Harry", 180)])
@@ -141,7 +148,7 @@ class TestBoard(unittest.TestCase):
     def test_out_of_bounds(self):
         width, height = 3, 3
         test_board = board.Board(width, height)
- 
+
         for y in range(-1, width+1):
             self.assertTrue(test_board.out_of_bounds(-1, y))
             self.assertFalse(test_board.in_bounds(-1, y))
@@ -167,7 +174,7 @@ class TestBoard(unittest.TestCase):
     def test_get_mark_out_of_bounds(self):
         width, height = 3, 3
         test_board = board.Board(width, height)
- 
+
         for y in range(-1, width+1):
             self.assertEqual(test_board.get_mark(-1, y), board.Mark.NONE)
             self.assertEqual(test_board.get_mark(width, y), board.Mark.NONE)
@@ -177,7 +184,7 @@ class TestBoard(unittest.TestCase):
             self.assertEqual(test_board.get_mark(x, height), board.Mark.NONE)
 
 
-    def test_set_mark_in_bounds(self): 
+    def test_set_mark_in_bounds(self):
         width, height = 3, 3
         test_board = board.Board(width, height)
 
@@ -219,7 +226,7 @@ class TestBoard(unittest.TestCase):
         test_board.set_mark(0, 0, board.Mark.S)
         test_board.set_mark(1, 1, board.Mark.O)
         test_board.set_mark(2, 2, board.Mark.S)
-                
+
         test_board.clear()
 
         self.assertEqual(test_board.grid, [board.Mark.EMPTY] * (width * height))
@@ -277,6 +284,6 @@ class TestBoard(unittest.TestCase):
     """
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
 
