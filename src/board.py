@@ -83,18 +83,22 @@ class SOS:
                  p2: Sequence[int],
                  player_id: int) -> None:
 
-        if len(p1) <= 0 or len(p2) <= 0:
+        if len(p1) <= 0 or len(p1) <= 0:
+            raise ValueError("points must have a positive number of dimensions")
+
+        elif len(p1) != len(p2):
             raise ValueError("points must have the same length/dimensionality")
-        
-        if p1 == p2:
+
+        elif p1 == p2:
             raise ValueError("points cannot be the same")
 
-        if player_id < 0:
+        elif player_id < 0:
             raise ValueError("player id may not be negative")
 
-        self.p1 = p1
-        self.p2 = p2
-        self.player_id = player_id
+        else:
+            self.p1 = p1
+            self.p2 = p2
+            self.player_id = player_id
 
     def __repr__(self) -> None:
         return f"SOS({self.p1!r}, {self.p2!r}, {self.player_id!r})"
@@ -106,13 +110,13 @@ class SOS:
 class Player:
     """Stores a player's name, what hue to use in a gui, and their score."""
     def __init__(self, name: str, hue: int = 0) -> None:
-
         if hue < 0:
             raise ValueError("player hue may not be negative")
 
-        self.name = name
-        self.hue = hue
-        self.score = 0
+        else:
+            self.name = name
+            self.hue = hue
+            self.score = 0
 
     def __repr__(self) -> None:
         return f"Player({self.name}, {self.hue})"
@@ -131,6 +135,12 @@ class Board:
     #def __init__(self,
     #             dimensions: tuple[int, int],
     #             players: list[Player] = None) -> None:
+
+        if num_cols < 3 or num_rows < 3:
+            raise ValueError("board dimensions must be greater than 3x3")
+
+        elif players == []:
+            raise ValueError("must specify at least one player")
 
         self.num_cols = num_cols
         self.num_rows = num_rows
@@ -183,14 +193,19 @@ class Board:
 
     # Does not automatically remove broken SOSes
     def set_mark(self, col: int, row: int, mark: Mark) -> None:
-        if self.in_bounds(col, row) and mark != Mark.NONE:
-            self.grid[(row * self.num_cols) + col] = mark
+        if self.out_of_bounds(col, row):
+            raise IndexError("tried to set mark out of bounds")
 
-            # If one or the other is empty, but not neither
+        elif mark == Mark.NONE:
+            raise ValueError("cannot set a cell to NONE")
+
+        else:
             if mark > self.get_mark(col, row):
                 self.mark_count += 1
             elif mark < self.get_mark(col, row):
                 self.mark_count -= 1
+
+            self.grid[(row * self.num_cols) + col] = mark
 
     def clear(self) -> None:
         self.grid = [Mark.EMPTY] * (self.num_cols * self.num_rows)
@@ -199,7 +214,10 @@ class Board:
 
     # Assumes that col and row are in bounds
     def make_move(self, col: int, row: int, mark: Mark) -> bool:
-        if mark > Mark.EMPTY and self.get_mark(col, row) == Mark.EMPTY:
+        if mark <= Mark.EMPTY:
+            raise ValueError("player cannot set a mark to empty")
+
+        elif self.get_mark(col, row) == Mark.EMPTY:
             self.set_mark(col, row, mark)
 
             new_sos_list = self.creates_sos(col, row, mark)
