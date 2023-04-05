@@ -11,6 +11,48 @@ import pygame
 
 import board
 
+def distance(p1: Sequence, p2: Sequence) -> float:
+    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+
+#def distance(p1: Sequence, p2: Sequence) -> float:
+#    return math.sqrt(sum((a - b)**2 for a, b in zip(p1, p2)))
+
+def midpoint(p1: Sequence, p2: Sequence) -> tuple:
+    return ((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)
+
+#def midpoint(p1: Sequence, p2: Sequence) -> tuple:
+#    return tuple(map(lambda a, b: (a + b) / 2, p1, p2))
+
+def angle_between(p1: Sequence, p2: Sequence) -> float:
+    return math.atan2(p1[1] - p2[1], p1[0] - p2[0])
+
+def draw_nice_line(surface: pygame.Surface,
+                   color: Sequence,
+                   start_pos: Sequence,
+                   end_pos: Sequence,
+                   width: float) -> pygame.Rect:
+
+    if len(start_pos) != 2 or len(end_pos) != 2:
+        #any(not isinstance(x, int) for x in start_pos + end_pos)):
+        raise TypeError("Points must be two-dimensional")
+
+    line = pygame.Surface([distance(start_pos, end_pos), width])
+
+    line.set_colorkey((0, 0, 0))
+    line.fill(color)
+
+    # must multiply by -1 because atan assumes up is positive, 
+    # while in pygame down is positive
+    angle = math.degrees(angle_between(start_pos, end_pos)) * (-1)
+    line = pygame.transform.rotate(line, angle)
+    
+    rect = line.get_rect(center = midpoint(start_pos, end_pos))
+
+    surface.blit(line, rect)
+
+    return rect
+
+
 class Button:
     """A clickable button for Pygame"""
 
@@ -112,8 +154,14 @@ class Game:
 
     def draw_sos_list(self) -> None:
         for sos in self.board.sos_list:
-            line_color = pygame.Color(self.board.players[sos.player_id].hue, 1, 1, 1).hsla
-            pygame.draw.line(self.surface, line_color, sos.p1, sos.p2)
+            line_color = pygame.Color(0)
+            line_color.hsla = (self.board.players[sos.player_id].hue, 100, 50, 100)
+            #pygame.draw.line(self.surface, 
+            draw_nice_line(self.surface,
+                           line_color, 
+                           [(i + 0.5) * self.cell_size + (i + 1) * self.gap_size for i in sos.p1], 
+                           [(i + 0.5) * self.cell_size + (i + 1) * self.gap_size for i in sos.p2],
+                           math.ceil(self.size * 0.01))
 
     def menu_clicks(self, pos: Sequence, button: int = 1) -> None:
         print("menu click handling not implemented")
@@ -169,7 +217,7 @@ class Game:
                                 self.menu_clicks(pos, e.button)
 
                             case "play":
-                                self.board_clicks(pos, e.button)                    
+                                self.board_clicks(pos, e.button)
 
             match self.state:
                 case "menu":
