@@ -356,7 +356,6 @@ class Board:
         if self.out_of_bounds(col, row):
             return sos_list
 
-
         offsets = ((-1,-1), # north west
                    ( 0,-1), # north
                    ( 1,-1), # north east

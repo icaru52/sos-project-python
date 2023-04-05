@@ -27,7 +27,7 @@ def angle_between(p1: Sequence, p2: Sequence) -> float:
     return math.atan2(p1[1] - p2[1], p1[0] - p2[0])
 
 def draw_nice_line(surface: pygame.Surface,
-                   color: Sequence,
+                   color: Sequence[int],
                    start_pos: Sequence,
                    end_pos: Sequence,
                    width: float) -> pygame.Rect:
@@ -135,21 +135,27 @@ class Game:
         y_offset = (self.surface.get_size()[1] - self.size)/2 + self.gap_size
         for row in range(self.board.num_rows):
             for col in range(self.board.num_cols):
-            
-                cell_x = x_offset + (self.cell_size + self.gap_size)*col
-                cell_y = y_offset + (self.cell_size + self.gap_size)*row
+                
+                cell_rect = pygame.Rect(x_offset + (self.cell_size + self.gap_size)*col,
+                                        y_offset + (self.cell_size + self.gap_size)*row, 
+                                        self.cell_size, 
+                                        self.cell_size)
 
-                pygame.draw.rect(self.surface,
-                                 (255, 100, 100),
-                                 [cell_x, cell_y,
-                                  self.cell_size, self.cell_size],
-                                 2)
+                hilight_color = pygame.Color(0, 0, 0)
+                if cell_rect.collidepoint(pygame.mouse.get_pos()):
+                    hilight_color.hsla = (self.board.players[self.board.turn].hue, 100, 70, 100)
+                else: 
+                    hilight_color.hsla = (0, 0, 60, 100)
+
+                pygame.draw.rect(self.surface, hilight_color, cell_rect)
+                
+                pygame.draw.rect(self.surface, (255, 255, 255), cell_rect, 2)
 
                 font = pygame.font.SysFont(None, int(self.cell_size))
                 text = font.render(self.board.get_char(col, row), 1, (255, 255, 255))
-                self.surface.blit(text,
-                                  (cell_x + (self.cell_size - text.get_size()[0]) / 2,
-                                   cell_y + (self.cell_size - text.get_size()[1]) / 2))
+
+                self.surface.blit(text, text.get_rect(center=cell_rect.center))
+
         self.draw_sos_list()
 
     def draw_sos_list(self) -> None:
@@ -161,7 +167,7 @@ class Game:
                            line_color, 
                            [(i + 0.5) * self.cell_size + (i + 1) * self.gap_size for i in sos.p1], 
                            [(i + 0.5) * self.cell_size + (i + 1) * self.gap_size for i in sos.p2],
-                           math.ceil(self.size * 0.01))
+                           max(1, self.size * 0.01))
 
     def menu_clicks(self, pos: Sequence, button: int = 1) -> None:
         print("menu click handling not implemented")
