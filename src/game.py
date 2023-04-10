@@ -11,16 +11,16 @@ import pygame
 
 import board
 
-def distance(p1: Sequence, p2: Sequence) -> float:
+def distance(p1: Sequence[float], p2: Sequence[float]) -> float:
     return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
-#def distance(p1: Sequence, p2: Sequence) -> float:
+#def distance(p1: Sequence[float], p2: Sequence[float]) -> float:
 #    return math.sqrt(sum((a - b)**2 for a, b in zip(p1, p2)))
 
-def midpoint(p1: Sequence, p2: Sequence) -> tuple:
+def midpoint(p1: Sequence[float], p2: Sequence[float]) -> tuple[float]:
     return ((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)
 
-#def midpoint(p1: Sequence, p2: Sequence) -> tuple:
+#def midpoint(p1: Sequence[float], p2: Sequence[float]) -> tuple[float]:
 #    return tuple(map(lambda a, b: (a + b) / 2, p1, p2))
 
 def angle_between(p1: Sequence, p2: Sequence) -> float:
@@ -28,8 +28,8 @@ def angle_between(p1: Sequence, p2: Sequence) -> float:
 
 def draw_nice_line(surface: pygame.Surface,
                    color: Sequence[int],
-                   start_pos: Sequence,
-                   end_pos: Sequence,
+                   start_pos: Sequence[float],
+                   end_pos: Sequence[float],
                    width: float) -> pygame.Rect:
 
     if len(start_pos) != 2 or len(end_pos) != 2:
@@ -51,6 +51,22 @@ def draw_nice_line(surface: pygame.Surface,
     surface.blit(line, rect)
 
     return rect
+
+def draw_button(surface: pygame.Surface, 
+                color: Sequence[int], 
+                hover_color: Sequence[int], 
+                text: str, 
+                rect: pygame.rect):
+
+    font = pygame.font.SysFont(None, int(rect[3]))
+
+    if rect.collidepoint(pygame.mouse.get_pos()):
+        button_color = hover_color
+    else:
+        button_color = color
+    pygame.draw.rect(surface, button_color, rect)
+    rendered_text = font.render(text, 1, (255, 255, 255))
+    surface.blit(rendered_text, rendered_text.get_rect(center=rect.center))
 
 
 class Button:
@@ -100,44 +116,95 @@ class Game:
         self.cell_size = ((self.size - self.gap_size) /
                           self.board.num_cols - self.gap_size)
 
+        self.cell_stride = self.cell_size + self.gap_size
+
         self.cells = []
 
-        x_offset = (self.surface.get_size()[0] - self.size)/2 + self.gap_size
-        y_offset = (self.surface.get_size()[1] - self.size)/2 + self.gap_size
+        self.board_offset = ((self.surface.get_size()[0] - self.size)/2 + self.gap_size,
+                             (self.surface.get_size()[1] - self.size)/2 + self.gap_size)
         for y in range(self.board.num_rows):
             for x in range(self.board.num_cols):
-                cell_x = x_offset + (self.cell_size + self.gap_size)*x
-                cell_y = y_offset + (self.cell_size + self.gap_size)*y
+                cell_x = self.board_offset[0] + self.cell_stride * x
+                cell_y = self.board_offset[1] + self.cell_stride * y
 
                 self.cells.append(Button([cell_x, cell_y,
                                           self.cell_size, self.cell_size]))
 
-        self.state = "play"
+        self.state = "menu"
 
     #def resize(self, width: int, height: int) -> None:
     #    
 
     def draw_menu(self) -> None:
-        self.surface.fill((0, 0, 0))
-        print("menu not implemented")
+        self.surface.fill((50, 50, 50))
+
+        row_one_y = 100
+
+        # size down
+        rect = pygame.Rect(0, row_one_y, self.cell_size, self.cell_size)
+        rect.centerx = self.surface.get_width() * 1/3
+        draw_button(self.surface, (100, 100, 100), (150, 150, 150), "-", rect)
+
+        # size
+        rect = pygame.Rect(0, row_one_y, self.cell_size, self.cell_size)
+        rect.centerx = self.surface.get_width() * 1/2
+        draw_button(self.surface, 
+                    (80, 80, 80), 
+                    (80, 80, 80), 
+                    str(self.board.num_cols), 
+                    rect)
+        
+        # size up
+        rect = pygame.Rect(0, row_one_y, self.cell_size, self.cell_size)
+        rect.centerx = self.surface.get_width() * 2/3
+        draw_button(self.surface, (100, 100, 100), (150, 150, 150), "+", rect)
+        
+
+        row_two_y = 200
+
+        # simple
+        rect = pygame.Rect(0, row_two_y, 300, self.cell_size)
+        rect.centerx = self.surface.get_width() * 1/4
+        draw_button(self.surface, 
+                   (100, 100, 100), 
+                   (150, 150, 150), 
+                   "Simple Game", 
+                   rect)
+        
+        # general
+        rect = pygame.Rect(0, row_two_y, 300, self.cell_size)
+        rect.centerx = self.surface.get_width() * 3/4
+        draw_button(self.surface, 
+                   (100, 100, 100), 
+                   (150, 150, 150), 
+                   "General Game", 
+                   rect)
+
+        # start
+        rect = pygame.Rect(0, 400, 200, self.cell_size)
+        rect.centerx = self.surface.get_rect().centerx
+        draw_button(self.surface, 
+                   (100, 100, 100), 
+                   (150, 150, 150), 
+                   "START", 
+                   rect)
+        
 
     def draw_board(self) -> None:
-        self.surface.fill((0, 0, 0))
+        self.surface.fill((50, 50, 50))
         for cell in self.cells:
             cell.is_hovered(pygame.mouse.get_pos())
             cell.draw(self.surface)
         self.draw_sos_list()
 
     def new_draw_board(self) -> None:
-        self.surface.fill((0, 0, 0))
+        self.surface.fill((50, 50, 50))
 
-        x_offset = (self.surface.get_size()[0] - self.size)/2 + self.gap_size
-        y_offset = (self.surface.get_size()[1] - self.size)/2 + self.gap_size
         for row in range(self.board.num_rows):
             for col in range(self.board.num_cols):
                 
-                cell_rect = pygame.Rect(x_offset + (self.cell_size + self.gap_size)*col,
-                                        y_offset + (self.cell_size + self.gap_size)*row, 
+                cell_rect = pygame.Rect(self.board_offset[0] + self.cell_stride * col,
+                                        self.board_offset[1] + self.cell_stride * row, 
                                         self.cell_size, 
                                         self.cell_size)
 
@@ -162,15 +229,41 @@ class Game:
         for sos in self.board.sos_list:
             line_color = pygame.Color(0)
             line_color.hsla = (self.board.players[sos.player_id].hue, 100, 50, 100)
-            #pygame.draw.line(self.surface, 
             draw_nice_line(self.surface,
                            line_color, 
-                           [(i + 0.5) * self.cell_size + (i + 1) * self.gap_size for i in sos.p1], 
-                           [(i + 0.5) * self.cell_size + (i + 1) * self.gap_size for i in sos.p2],
+                           [self.board_offset[idx] + (i + 0.5) * self.cell_size + (i + 1) * self.gap_size for idx, i in enumerate(sos.p1)], 
+                           [self.board_offset[idx] + (i + 0.5) * self.cell_size + (i + 1) * self.gap_size for idx, i in enumerate(sos.p2)],
                            max(1, self.size * 0.01))
 
     def menu_clicks(self, pos: Sequence, button: int = 1) -> None:
-        print("menu click handling not implemented")
+        #print("menu click handling not implemented")
+
+        row_one_y = 100
+
+        # size down
+        rect = pygame.Rect(0, row_one_y, self.cell_size, self.cell_size)
+        rect.centerx = self.surface.get_width() * 1/3
+        #if rect.collidepoint(pygame.mouse.get_pos()):
+            
+
+        # size up
+        rect = pygame.Rect(0, row_one_y, self.cell_size, self.cell_size)
+        rect.centerx = self.surface.get_width() * 2/3
+        
+
+        row_two_y = 200
+
+        # simple
+        rect = pygame.Rect(0, row_two_y, 300, self.cell_size)
+        rect.centerx = self.surface.get_width() * 1/4
+        
+        # general
+        rect = pygame.Rect(0, row_two_y, 300, self.cell_size)
+        rect.centerx = self.surface.get_width() * 3/4
+
+        # start
+        rect = pygame.Rect(0, 400, 200, self.cell_size)
+        rect.centerx = self.surface.get_rect().centerx
 
     def cell_indices_to_pos(self, indices: Sequence) -> list:
         indices = [None] * len(indices)
@@ -184,7 +277,7 @@ class Game:
         indices = [None] * len(pos)
 
         for idx, coord in enumerate(pos):
-            indices[idx] = math.floor((pos[idx] - (self.surface.get_size()[idx] - self.size + self.gap_size)/2) / (self.cell_size + self.gap_size))
+            indices[idx] = math.floor((pos[idx] - (self.surface.get_size()[idx] - self.size + self.gap_size)/2) / self.cell_stride)
 
         return indices
 

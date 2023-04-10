@@ -7,6 +7,6 @@
 import game
 
 if __name__ == "__main__":
-    game = game.Game()
+    game = game.Game(512*4/3, 512)
     game.start()
 
