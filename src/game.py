@@ -56,7 +56,7 @@ def draw_button(surface: pygame.Surface,
                 color: Sequence[int], 
                 hover_color: Sequence[int], 
                 text: str, 
-                rect: pygame.rect):
+                rect: pygame.rect) -> None:
 
     font = pygame.font.SysFont(None, int(rect[3]))
 
@@ -118,10 +118,11 @@ class Game:
 
         self.cell_stride = self.cell_size + self.gap_size
 
-        self.cells = []
-
         self.board_offset = ((self.surface.get_size()[0] - self.size)/2 + self.gap_size,
                              (self.surface.get_size()[1] - self.size)/2 + self.gap_size)
+
+        self.cells = []
+
         for y in range(self.board.num_rows):
             for x in range(self.board.num_cols):
                 cell_x = self.board_offset[0] + self.cell_stride * x
@@ -138,15 +139,15 @@ class Game:
     def draw_menu(self) -> None:
         self.surface.fill((50, 50, 50))
 
-        row_one_y = 100
+        row_y = self.surface.get_height() * 1/4
 
         # size down
-        rect = pygame.Rect(0, row_one_y, self.cell_size, self.cell_size)
+        rect = pygame.Rect(0, row_y, self.cell_size, self.cell_size)
         rect.centerx = self.surface.get_width() * 1/3
         draw_button(self.surface, (100, 100, 100), (150, 150, 150), "-", rect)
 
         # size
-        rect = pygame.Rect(0, row_one_y, self.cell_size, self.cell_size)
+        rect = pygame.Rect(0, row_y, self.cell_size, self.cell_size)
         rect.centerx = self.surface.get_width() * 1/2
         draw_button(self.surface, 
                     (80, 80, 80), 
@@ -155,15 +156,15 @@ class Game:
                     rect)
         
         # size up
-        rect = pygame.Rect(0, row_one_y, self.cell_size, self.cell_size)
+        rect = pygame.Rect(0, row_y, self.cell_size, self.cell_size)
         rect.centerx = self.surface.get_width() * 2/3
         draw_button(self.surface, (100, 100, 100), (150, 150, 150), "+", rect)
         
-
-        row_two_y = 200
+ 
+        row_y = self.surface.get_height() * 1/2
 
         # simple
-        rect = pygame.Rect(0, row_two_y, 300, self.cell_size)
+        rect = pygame.Rect(0, row_y, 300, self.cell_size)
         rect.centerx = self.surface.get_width() * 1/4
         draw_button(self.surface, 
                    (100, 100, 100), 
@@ -172,7 +173,7 @@ class Game:
                    rect)
         
         # general
-        rect = pygame.Rect(0, row_two_y, 300, self.cell_size)
+        rect = pygame.Rect(0, row_y, 300, self.cell_size)
         rect.centerx = self.surface.get_width() * 3/4
         draw_button(self.surface, 
                    (100, 100, 100), 
@@ -180,8 +181,11 @@ class Game:
                    "General Game", 
                    rect)
 
+
+        row_y = self.surface.get_height() * 3/4
+
         # start
-        rect = pygame.Rect(0, 400, 200, self.cell_size)
+        rect = pygame.Rect(0, row_y, 200, self.cell_size)
         rect.centerx = self.surface.get_rect().centerx
         draw_button(self.surface, 
                    (100, 100, 100), 
@@ -209,14 +213,16 @@ class Game:
                                         self.cell_size)
 
                 hilight_color = pygame.Color(0, 0, 0)
-                if cell_rect.collidepoint(pygame.mouse.get_pos()):
+                if (cell_rect.collidepoint(pygame.mouse.get_pos()) and 
+                   self.board.get_mark(col, row) == board.Mark.EMPTY):
                     hilight_color.hsla = (self.board.players[self.board.turn].hue, 100, 70, 100)
                 else: 
                     hilight_color.hsla = (0, 0, 60, 100)
 
                 pygame.draw.rect(self.surface, hilight_color, cell_rect)
-                
-                pygame.draw.rect(self.surface, (255, 255, 255), cell_rect, 2)
+        
+                outline = math.ceil(self.cell_size * 0.05)
+                pygame.draw.rect(self.surface, (255, 255, 255), cell_rect, outline)
 
                 font = pygame.font.SysFont(None, int(self.cell_size))
                 text = font.render(self.board.get_char(col, row), 1, (255, 255, 255))
@@ -224,6 +230,18 @@ class Game:
                 self.surface.blit(text, text.get_rect(center=cell_rect.center))
 
         self.draw_sos_list()
+
+    def draw_end(self) -> None:
+        self.new_draw_board()
+
+        gray_rect = pygame.Surface(self.surface.get_size())
+        gray_rect.set_alpha(128)
+        gray_rect.fill((128, 128, 128))
+        self.surface.blit(gray_rect, (0, 0))
+
+        rect = pygame.Rect(0, 0, 200, 200)
+        rect.center = self.surface.get_rect().center
+        draw_button(self.surface, (0, 0, 0), (50, 50, 50), "end", rect)
 
     def draw_sos_list(self) -> None:
         for sos in self.board.sos_list:
@@ -236,34 +254,59 @@ class Game:
                            max(1, self.size * 0.01))
 
     def menu_clicks(self, pos: Sequence, button: int = 1) -> None:
-        #print("menu click handling not implemented")
-
-        row_one_y = 100
+        row_y = self.surface.get_height() * 1/4
 
         # size down
-        rect = pygame.Rect(0, row_one_y, self.cell_size, self.cell_size)
+        rect = pygame.Rect(0, row_y, self.cell_size, self.cell_size)
         rect.centerx = self.surface.get_width() * 1/3
-        #if rect.collidepoint(pygame.mouse.get_pos()):
+        if self.board.num_cols - 1 >= 3 and rect.collidepoint(pos):
+            self.board.num_cols -= 1
+            self.board.num_rows -= 1
+            return
             
-
         # size up
-        rect = pygame.Rect(0, row_one_y, self.cell_size, self.cell_size)
+        rect = pygame.Rect(0, row_y, self.cell_size, self.cell_size)
         rect.centerx = self.surface.get_width() * 2/3
-        
+        if rect.collidepoint(pos):
+            self.board.num_cols += 1
+            self.board.num_rows += 1
+            return
 
-        row_two_y = 200
+
+        row_y = self.surface.get_height() * 1/2
 
         # simple
-        rect = pygame.Rect(0, row_two_y, 300, self.cell_size)
+        rect = pygame.Rect(0, row_y, 300, self.cell_size)
         rect.centerx = self.surface.get_width() * 1/4
+        if rect.collidepoint(pos):
+            self.board.game_mode = "simple"
+            return
         
         # general
-        rect = pygame.Rect(0, row_two_y, 300, self.cell_size)
+        rect = pygame.Rect(0, row_y, 300, self.cell_size)
         rect.centerx = self.surface.get_width() * 3/4
+        if rect.collidepoint(pos):
+            self.board.game_mode = "general"
+            return
+
+        row_y = self.surface.get_height() * 3/4
 
         # start
-        rect = pygame.Rect(0, 400, 200, self.cell_size)
-        rect.centerx = self.surface.get_rect().centerx
+        rect = pygame.Rect(0, row_y, 200, self.cell_size)
+        rect.centerx = self.surface.get_width() * 1/2
+        if rect.collidepoint(pos):
+            self.board.reset()
+
+            self.cell_size = ((self.size - self.gap_size) /
+                              self.board.num_cols - self.gap_size)
+
+            self.cell_stride = self.cell_size + self.gap_size
+
+            self.board_offset = ((self.surface.get_size()[0] - self.size)/2 + self.gap_size,
+                                 (self.surface.get_size()[1] - self.size)/2 + self.gap_size)
+
+            self.state = "play"
+            return
 
     def cell_indices_to_pos(self, indices: Sequence) -> list:
         indices = [None] * len(indices)
@@ -295,6 +338,9 @@ class Game:
                     self.board.make_move(cell_col, cell_row, board.Mark.O)
                         #self.cells[(cell_row * self.board.num_cols) + cell_col].text = "O"
 
+    def end_clicks(self, pos: Sequence, button: int = 1) -> None:
+        print("Endgame click detection not implemented")
+
     def start(self) -> None:
         running = True
 
@@ -318,12 +364,18 @@ class Game:
                             case "play":
                                 self.board_clicks(pos, e.button)
 
+                            case "end":
+                                self.end_clicks(pos, e.button)
+
             match self.state:
                 case "menu":
                     self.draw_menu()
 
                 case "play":
                     self.new_draw_board()
+
+                case "end":
+                    self.draw_end()
 
             pygame.display.update()
 

@@ -165,8 +165,8 @@ class Board:
     #             dimensions: tuple[int],
     #             players: list[Player] = None) -> None:
 
-        if num_cols < 3 or num_rows < 3:
-            raise ValueError("board dimensions must be greater than 3x3")
+        if num_cols <= 3 or num_rows <= 3:
+            raise ValueError("board dimensions must be greater than or equal to 3x3")
 
         elif players == []:
             raise ValueError("must specify at least one player")
@@ -185,6 +185,10 @@ class Board:
 
         self.sos_list = []
         self.turn = 0
+
+        self.game_mode = "simple"
+
+        self.end = False
 
     def __repr__(self) -> None:
         return f"Board({self.num_cols}, {self.num_rows}, {self.players!r})"
@@ -395,6 +399,20 @@ class Board:
     def simple_end(self) -> bool:
         return len(self.sos_list) > 0 or self.general_end()
 
+    def end(self) -> bool:
+        match self.game_mode:
+            case "general":
+                self.general_end()
+
+            case "simple":
+                self.simple_end()
+
+            case _:
+                raise NotImplementedError("Game mode " + 
+                                          self.game_mode + 
+                                          " does not exist.")
+
+
     # Can return a victor even when game isn't over
     # Useful for listing current leader(s)
     def general_victors(self) -> list[int]:
@@ -415,10 +433,16 @@ class Board:
         else:
             return -1
 
-    def reset(self, num_cols: int = -1, num_rows: int = -1) -> None:
+    def reset(self, 
+              num_cols: int = -1, 
+              num_rows: int = -1, 
+              game_mode: str = "simple") -> None:
         if num_cols >= 3 and num_rows >= 3:
             self.num_cols = num_cols
             self.num_rows = num_rows
         self.clear()
         self.turn = 0
+        self.end = False
+
+        self.game_mode = game_mode
 
