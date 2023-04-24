@@ -3,7 +3,7 @@
 # Programmer: Ian Rowse <imrnnc@umsystem.edu>
 
 from collections.abc import Sequence
-#import math
+from typing import Dict
 import pygame
 
 BUTTON_CLICK = pygame.event.custom_type()
@@ -13,7 +13,7 @@ class Button(pygame.Rect):
 
     def __init__(self,
                  rect: pygame.Rect,
-                 event_attr: str = "",
+                 event_attrs: Dict = None,
                  text: str = "",
                  clicked: bool = False,
                  color: pygame.Color = None,
@@ -27,7 +27,7 @@ class Button(pygame.Rect):
         self.text_color = pygame.Color("white") if color is None else text_color
 
         self.text = text
-        self.event_attr = event_attr
+        self.event_attrs = dict() if event_attrs is None else event_attrs
         self.clicked = clicked
 
     def is_hovered(self, pos: Sequence) -> bool:
@@ -54,8 +54,7 @@ class Button(pygame.Rect):
             surface.blit(text, text.get_rect(center=self.rect.center))
     
     def click(self):
-        pygame.event.post(
-                pygame.event.Event(BUTTON_CLICK, {"button" : self.event_attr}))
+        pygame.event.post(pygame.event.Event(BUTTON_CLICK, self.event_attrs))
 
 
 class UI:
