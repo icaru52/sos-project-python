@@ -24,7 +24,8 @@ class Game:
         os.environ["SDL_VIDEO_CENTERED"] = "1"
         pygame.init()
 
-        self.surface = pygame.display.set_mode((window_width, window_height))
+        self.surface = pygame.display.set_mode((window_width, window_height), 
+                                               pygame.RESIZABLE)
 
         self.board = board.Board()
 
@@ -132,10 +133,75 @@ class Game:
 
         self.state = "menu"
 
-    #def populate_buttons(self) -> None:
-    #    
+    def populate_buttons(self) -> None:
+        rect = pygame.Rect(0, 0, 0, 0)
 
-    #def resize(self, width: int, height: int) -> None:
+        for y in range(self.board.num_rows):
+            for x in range(self.board.num_cols):
+                self.board_ui.add(ui.Button(rect,
+                                            {"x": x, "y": y},
+                                            self.board.get_char(x, y),
+                                            False,
+                                            pygame.Color(100),
+                                            pygame.Color(150),
+                                            pygame.Color("white")))
+
+        # size down
+        self.menu_ui.add(ui.Button(rect,
+                                   "size_down",
+                                   "-",
+                                   False,
+                                   pygame.Color(100),
+                                   pygame.Color(150),
+                                   pygame.Color("white")))
+
+        # size up
+        self.menu_ui.add(ui.Button(rect,
+                                   "size_up",
+                                   "+",
+                                   False,
+                                   pygame.Color(100),
+                                   pygame.Color(150),
+                                   pygame.Color("white")))
+
+        # simple
+        self.menu_ui.add(ui.Button(rect,
+                                   "simple_game",
+                                   "Simple Game",
+                                   True,
+                                   pygame.Color(100),
+                                   pygame.Color(150),
+                                   pygame.Color("white")))
+
+        # general
+        self.menu_ui.add(ui.Button(rect,
+                                   "general_game",
+                                   "General Game",
+                                   False,
+                                   pygame.Color(100),
+                                   pygame.Color(150),
+                                   pygame.Color("white")))
+
+        """
+        # start
+        rect = pygame.Rect(0, row_y, 200, cell_size)
+        rect.centerx = self.surface.get_rect().centerx
+        draw_button(self.surface, 
+                   (100, 100, 100), 
+                   (150, 150, 150), 
+                   "START", 
+                   rect)
+        """
+
+        self.menu_ui.add(ui.Button(rect,
+                                   "start_game",
+                                   "START",
+                                   False,
+                                   pygame.Color(100),
+                                   pygame.Color(150),
+                                   pygame.Color("white")))
+
+    #def resize(self, Sequence[]) -> None:
     #    
 
     def draw_menu(self) -> None:
@@ -170,75 +236,25 @@ class Game:
                            max(1, self.size * 0.01))
 
     def menu_clicks(self, pos: Sequence, button: int = 1) -> None:
-        row_y = self.surface.get_height() * 1/4
-
+        """
         # size down
-        rect = pygame.Rect(0, row_y, self.cell_size, self.cell_size)
-        rect.centerx = self.surface.get_width() * 1/3
-        if self.board.num_cols - 1 >= 3 and rect.collidepoint(pos):
-            self.board.num_cols -= 1
-            self.board.num_rows -= 1
-            return
+        self.board.num_cols -= 1
+        self.board.num_rows -= 1
             
         # size up
-        rect = pygame.Rect(0, row_y, self.cell_size, self.cell_size)
-        rect.centerx = self.surface.get_width() * 2/3
-        if rect.collidepoint(pos):
-            self.board.num_cols += 1
-            self.board.num_rows += 1
-            return
-
-
-        row_y = self.surface.get_height() * 1/2
+        self.board.num_cols += 1
+        self.board.num_rows += 1
 
         # simple
-        rect = pygame.Rect(0, row_y, 300, self.cell_size)
-        rect.centerx = self.surface.get_width() * 1/4
-        if rect.collidepoint(pos):
-            self.board.game_mode = "simple"
-            return
-        
+        self.board.game_mode = "simple"
+                
         # general
-        rect = pygame.Rect(0, row_y, 300, self.cell_size)
-        rect.centerx = self.surface.get_width() * 3/4
-        if rect.collidepoint(pos):
-            self.board.game_mode = "general"
-            return
-
-        row_y = self.surface.get_height() * 3/4
+        self.board.game_mode = "general"
 
         # start
-        rect = pygame.Rect(0, row_y, 200, self.cell_size)
-        rect.centerx = self.surface.get_width() * 1/2
-        if rect.collidepoint(pos):
-            self.board.reset()
-
-            self.cell_size = ((self.size - self.gap_size) /
-                              self.board.num_cols - self.gap_size)
-
-            self.cell_stride = self.cell_size + self.gap_size
-
-            self.board_offset = ((self.surface.get_size()[0] - self.size)/2 + self.gap_size,
-                                 (self.surface.get_size()[1] - self.size)/2 + self.gap_size)
-
-            self.state = "play"
-            return
-
-    def cell_indices_to_pos(self, indices: Sequence) -> list:
-        indices = [None] * len(indices)
-
-        for idx, index in enumerate(indices):
-            indices[idx] = 0 #TODO: fix this
-
-        return indices
-
-    def pos_to_cell_indices(self, pos: Sequence) -> list:
-        indices = [None] * len(pos)
-
-        for idx, coord in enumerate(pos):
-            indices[idx] = math.floor((pos[idx] - (self.surface.get_size()[idx] - self.size + self.gap_size)/2) / self.cell_stride)
-
-        return indices
+        self.board.reset()
+        self.state = "play"
+        """
 
     def board_clicks(self, pos: Sequence, button: int = 1) -> None:
         cell_col, cell_row = self.pos_to_cell_indices(pos)
@@ -247,12 +263,8 @@ class Game:
             0 <= cell_row < self.board.num_rows):
 
             match button:
-                case 1:
-                    self.board.make_move(cell_col, cell_row, board.Mark.S)
-                        #self.cells[(cell_row * self.board.num_cols) + cell_col].text = "S"
-                case 3:
-                    self.board.make_move(cell_col, cell_row, board.Mark.O)
-                        #self.cells[(cell_row * self.board.num_cols) + cell_col].text = "O"
+                case 1: self.board.make_move(cell_col, cell_row, board.Mark.S)
+                case 3: self.board.make_move(cell_col, cell_row, board.Mark.O)
 
     def end_clicks(self, pos: Sequence, button: int = 1) -> None:
         print("Endgame click detection not implemented")
@@ -271,27 +283,27 @@ class Game:
                         if keys[pygame.K_q] or keys[pygame.K_ESCAPE]:
                             running = False
 
+                    case pygame.VIDEORESIZE:
+                        #self.surface = pygame.display.set_mode(e.size, pygame.RESIZABLE)
+                        self.resize(e.size)
+
                     case pygame.MOUSEBUTTONUP:
-                        pos = pygame.mouse.get_pos()
                         match self.state:
-                            case "menu":
-                                self.menu_clicks(pos, e.button)
+                            case "menu": self.menu_ui.click(e.pos, e.button)
+                            case "play": self.board_ui.click(e.pos, e.button)
+                            #case "end":  self.end_ui.click(e.pos, e.button)
 
-                            case "play":
-                                self.board_clicks(pos, e.button)
+                    case ui.BUTTON_CLICK:
+                        match self.state:
+                            case "menu": self.menu_clicks()
+                            case "play": self.board_clicks()
+                            #case "end":  self.end_clicks()
 
-                            case "end":
-                                self.end_clicks(pos, e.button)
 
             match self.state:
-                case "menu":
-                    self.draw_menu()
-
-                case "play":
-                    self.new_draw_board()
-
-                case "end":
-                    self.draw_end()
+                case "menu": self.draw_menu()
+                case "play": self.draw_board()
+                #case "end":  self.draw_end()
 
             pygame.display.update()
 

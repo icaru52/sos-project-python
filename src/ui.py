@@ -53,8 +53,10 @@ class Button(pygame.Rect):
             text = font.render(self.text, 1, self.text_color)
             surface.blit(text, text.get_rect(center=self.rect.center))
     
-    def click(self):
-        pygame.event.post(pygame.event.Event(BUTTON_CLICK, self.event_attrs))
+    def click(self, mouse_button: int = 1):
+        outattr = self.event_attrs.copy()
+        outattr["mouse_button"] = mouse_button
+        pygame.event.post(pygame.event.Event(BUTTON_CLICK, outattr))
 
 
 class UI:
@@ -62,20 +64,24 @@ class UI:
         self.buttons = list()
 
     def add(self, button: Button) -> bool:
+        """
         if button.collidelist(self.buttons) == -1:
             self.buttons.append(button)
             return True
         else:
             return False
+        """
+        self.buttons.append(button)
+        return True
 
     def draw(self, surface: pygame.Surface) -> None:
         for b in self.buttons:
            b.draw(surface) 
 
-    def click(self, pos: Sequence) -> None:
+    def click(self, pos: Sequence, mouse_button: int = 1) -> None:
         for b in self.buttons:
             if b.rect.collidepoint(pos):
-                b.click()
+                b.click(mouse_button)
                 return
 
         #index = pygame.Rect(pos, (0, 0)).collidelist(self.buttons)

@@ -296,10 +296,10 @@ class Game:
             match button:
                 case 1:
                     self.board.make_move(cell_col, cell_row, board.Mark.S)
-                        #self.cells[(cell_row * self.board.num_cols) + cell_col].text = "S"
+                    #self.cells[(cell_row * self.board.num_cols) + cell_col].text = "S"
                 case 3:
                     self.board.make_move(cell_col, cell_row, board.Mark.O)
-                        #self.cells[(cell_row * self.board.num_cols) + cell_col].text = "O"
+                    #self.cells[(cell_row * self.board.num_cols) + cell_col].text = "O"
 
     def end_clicks(self, pos: Sequence, button: int = 1) -> None:
         print("Endgame click detection not implemented")
@@ -319,26 +319,15 @@ class Game:
                             running = False
 
                     case pygame.MOUSEBUTTONUP:
-                        pos = pygame.mouse.get_pos()
                         match self.state:
-                            case "menu":
-                                self.menu_clicks(pos, e.button)
-
-                            case "play":
-                                self.board_clicks(pos, e.button)
-
-                            case "end":
-                                self.end_clicks(pos, e.button)
+                            case "menu": self.menu_clicks(e.pos, e.button)
+                            case "play": self.board_clicks(e.pos, e.button)
+                            case "end":  self.end_clicks(e.pos, e.button)
 
             match self.state:
-                case "menu":
-                    self.draw_menu()
-
-                case "play":
-                    self.new_draw_board()
-
-                case "end":
-                    self.draw_end()
+                case "menu": self.draw_menu()
+                case "play": self.new_draw_board()
+                case "end":  self.draw_end()
 
             pygame.display.update()
 
