@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     keypad.add(ui.Button(pygame.Rect(100, 100, 100, 100),
     #keypad.add(ui.Button((100, 100, 100, 100),
-                         "testbutton",
+                         { "button": "testbutton"},
                          "Button",
                          False,
                          pygame.Color("darkgray"),

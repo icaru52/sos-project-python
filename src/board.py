@@ -122,6 +122,10 @@ class SOS:
         else:
             self.p1 = p1
             self.p2 = p2
+            
+            #self.p1 = {"x" : p1[0], "y" : p1[1]}
+            #self.p2 = {"x" : p2[0], "y" : p2[1]}
+            
             self.player_id = player_id
 
     def __repr__(self) -> None:
