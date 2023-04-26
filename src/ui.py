@@ -2,6 +2,7 @@
 # Project: 2023 Spring Semester SOS Project
 # Programmer: Ian Rowse <imrnnc@umsystem.edu>
 
+from collections import UserDict
 from collections.abc import Sequence
 from typing import Dict
 import pygame
@@ -27,11 +28,11 @@ class Button(pygame.Rect):
         self.event_attrs = dict() if event_attrs is None else event_attrs
         self.clicked = clicked
 
-        self.color = pygame.Color("gray50") if color is None else color
-        self.hover_color = pygame.Color("gray60") if color is None else hover_color
-        self.clicked_color = pygame.Color("gray30") if color is None else clicked_color
+        self.color               = pygame.Color("gray50") if color is None else color
+        self.hover_color         = pygame.Color("gray60") if color is None else hover_color
+        self.clicked_color       = pygame.Color("gray30") if color is None else clicked_color
         self.clicked_hover_color = pygame.Color("gray40") if color is None else clicked_hover_color
-        self.text_color = pygame.Color("white") if color is None else text_color
+        self.text_color          = pygame.Color("white")  if color is None else text_color
 
 
     def is_hovered(self, pos: Sequence) -> bool:
@@ -62,25 +63,24 @@ class Button(pygame.Rect):
         pygame.event.post(pygame.event.Event(BUTTON_CLICK, outattr))
 
 
-class UI:
-    def __init__(self) -> None:
-        self.buttons = dict()
-
-    def add(self, key: str, button: Button) -> None:
-        self.buttons[key] = button
-        self.buttons[key].event_attrs["key"] = key
-
-    def clear(self) -> None:
-        self.buttons = dict()
+class UI(UserDict):
+    def __setitem__(self, key: str, button: Button):
+        UserDict.__setitem__(self, key, button)
+        UserDict.__getitem__(self, key).event_attrs["key"] = key
 
     def draw(self, surface: pygame.Surface) -> None:
-        for key, b in self.buttons.items():
+        for b in self.values():
             b.draw(surface) 
 
     def click(self, pos: Sequence, mouse_button: int = 1) -> None:
-        for key, b in self.buttons.items():
+        for b in self.values():
             if b.rect.collidepoint(pos):
                 b.click(mouse_button)
-                return
+                break
+
+    def hover(self, pos: Sequence) -> str:
+        for key, b in self.items():
+            if b.rect.collidepoint(pos):
+                return key
 
 

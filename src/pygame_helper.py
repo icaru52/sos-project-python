@@ -25,7 +25,7 @@ def draw_nice_line(surface: pygame.Surface,
                    color: Sequence[int],
                    start_pos: Sequence[float],
                    end_pos: Sequence[float],
-                   width: float) -> pygame.Rect:
+                   width: float = 2) -> pygame.Rect:
 
     if len(start_pos) != 2 or len(end_pos) != 2:
         #any(not isinstance(x, int) for x in start_pos + end_pos)):
@@ -50,12 +50,7 @@ def draw_nice_line(surface: pygame.Surface,
 
     return rect
 
-def rect_center(center_x: float, 
-                center_y: float, 
-                width: float, 
-                height: float) -> pygame.Rect:
-    return pygame.Rect(center_x - width/2, 
-                       center_y - height/2,
-                       width,
-                       height)
+def rect_center(center_x: float, center_y: float, 
+                width: float, height: float) -> pygame.Rect:
+    return pygame.Rect(center_x - width/2, center_y - height/2, width, height)
 

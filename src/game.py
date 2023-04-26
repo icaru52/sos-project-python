@@ -40,28 +40,19 @@ class Game:
         self.board_ui.clear()
         for y in range(self.board.num_rows):
             for x in range(self.board.num_cols):
-                self.board_ui.add(str(x)+" "+str(y), 
-                                  ui.Button(rect, self.board.get_char(x, y), {"x": x, "y": y}))
+                self.board_ui[f"{x} {y}"] = ui.Button(rect, 
+                                                      self.board.get_char(x, y), 
+                                                      {"x": x, "y": y})
 
         self.menu_ui.clear()
-
-        # size down
-        self.menu_ui.add("size_down", ui.Button(rect, "-"))
-
-        # current size
-        self.menu_ui.add("cur_size", ui.Button(rect, str(self.board.num_cols)))
-
-        # size up
-        self.menu_ui.add("size_up", ui.Button(rect, "+"))
-
-        # simple
-        self.menu_ui.add("simple_game", ui.Button(rect, "Simple Game", {}, True))
-
-        # general
-        self.menu_ui.add("general_game", ui.Button(rect, "General Game", {}, False))
-
-        # start
-        self.menu_ui.add("start_game", ui.Button(rect, "START"))
+        self.menu_ui = ui.UI({
+            "size_down"    : ui.Button(rect, "-"),
+            "cur_size"     : ui.Button(rect, str(self.board.num_cols)),
+            "size_up"      : ui.Button(rect, "+"),
+            "simple_game"  : ui.Button(rect, "Simple Game", {}, True),
+            "general_game" : ui.Button(rect, "General Game", {}, False),
+            "start_game"   : ui.Button(rect, "START")
+        })
 
     def resize(self) -> None:
         self.size = min(self.surface.get_size())
@@ -75,29 +66,29 @@ class Game:
 
         for y in range(self.board.num_rows):
             for x in range(self.board.num_cols):
-                self.board_ui.buttons[str(x)+" "+str(y)].rect = ( # Cursed, I know...
+                self.board_ui[f"{x} {y}"].rect = ( # Cursed, I know...
                     pygame.Rect(board_offset[0] + (cell_size + gap_size) * x, 
                                 board_offset[1] + (cell_size + gap_size) * y, 
                                 cell_size, 
                                 cell_size))
 
-        self.menu_ui.buttons["size_down"].rect = rect_center(width * 1/3, height * 1/4,
-                                                             cell_size, cell_size)
+        self.menu_ui["size_down"].rect    = rect_center(width * 1/6, height * 1/6,
+                                                        width * 1/6, height * 1/6)
  
-        self.menu_ui.buttons["cur_size"].rect = rect_center(width * 1/2, height * 1/4,
-                                                           cell_size, cell_size)
+        self.menu_ui["cur_size"].rect     = rect_center(width * 1/2, height * 1/6,
+                                                        width * 1/6, height * 1/6)
         
-        self.menu_ui.buttons["size_up"].rect = rect_center(width * 2/3, height * 1/4,
-                                                           cell_size, cell_size)
+        self.menu_ui["size_up"].rect      = rect_center(width * 5/6, height * 1/6,
+                                                        width * 1/6, height * 1/6)
 
-        self.menu_ui.buttons["simple_game"].rect = rect_center(width * 1/4, height * 1/2,
-                                                               width * 1/4, cell_size)
+        self.menu_ui["simple_game"].rect  = rect_center(width * 1/4, height * 1/2,
+                                                        width * 1/4, height * 1/6)
 
-        self.menu_ui.buttons["general_game"].rect = rect_center(width * 3/4, height * 1/2,
-                                                                width * 1/4, cell_size)
+        self.menu_ui["general_game"].rect = rect_center(width * 3/4, height * 1/2,
+                                                        width * 1/4, height * 1/6)
 
-        self.menu_ui.buttons["start_game"].rect = rect_center(width * 1/2, height * 3/4,
-                                                              width * 1/2, cell_size)
+        self.menu_ui["start_game"].rect   = rect_center(width * 1/2, height * 5/6,
+                                                        width * 1/2, height * 1/6)
     
 
     def draw_menu(self) -> None:
@@ -127,8 +118,8 @@ class Game:
             line_color.hsla = (self.board.players[sos.player_id].hue, 100, 50, 100)
             draw_nice_line(self.surface,
                            line_color, 
-                           self.board_ui.buttons[str(sos.p1[0])+" "+str(sos.p1[1])].rect.center, 
-                           self.board_ui.buttons[str(sos.p2[0])+" "+str(sos.p2[1])].rect.center,
+                           self.board_ui[f"{sos.p1[0]} {sos.p1[1]}"].rect.center, 
+                           self.board_ui[f"{sos.p2[0]} {sos.p2[1]}"].rect.center,
                            max(1, self.size / self.board.num_cols * 0.1))
 
     def menu_clicks(self, key: str, mouse_button: int = 1) -> None:
@@ -137,22 +128,22 @@ class Game:
                 if self.board.num_cols > 3:
                     self.board.num_cols -= 1
                     self.board.num_rows -= 1
-                    self.menu_ui.buttons["cur_size"].text = str(self.board.num_cols)
+                    self.menu_ui["cur_size"].text = str(self.board.num_cols)
             
             case "size_up":
                 self.board.num_cols += 1
                 self.board.num_rows += 1
-                self.menu_ui.buttons["cur_size"].text = str(self.board.num_cols)
+                self.menu_ui["cur_size"].text = str(self.board.num_cols)
             
             case "simple_game":
                 self.board.game_mode = "simple"
-                self.menu_ui.buttons["simple_game"].clicked = True
-                self.menu_ui.buttons["general_game"].clicked = False
+                self.menu_ui["simple_game"].clicked = True
+                self.menu_ui["general_game"].clicked = False
             
             case "general_game":
                 self.board.game_mode = "general"
-                self.menu_ui.buttons["simple_game"].clicked = False
-                self.menu_ui.buttons["general_game"].clicked = True
+                self.menu_ui["simple_game"].clicked = False
+                self.menu_ui["general_game"].clicked = True
             
             case "start_game":
                 self.board.reset()
@@ -162,7 +153,7 @@ class Game:
 
     def board_clicks(self, col: int, row: int, button: int = 1) -> None:
         self.board.make_move(col, row, board.Mark.S if button == 1 else board.Mark.O)
-        self.board_ui.buttons[str(col) + " " + str(row)].text = self.board.get_char(col, row)
+        self.board_ui[f"{col} {row}"].text = self.board.get_char(col, row)
 
     def end_clicks(self, pos: Sequence, button: int = 1) -> None:
         print("Endgame click detection not implemented")
