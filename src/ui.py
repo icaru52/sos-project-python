@@ -13,46 +13,49 @@ class Button(pygame.Rect):
 
     def __init__(self,
                  rect: pygame.Rect,
-                 event_attrs: Dict = None,
                  text: str = "",
+                 event_attrs: Dict = None,
                  clicked: bool = False,
                  color: pygame.Color = None,
                  hover_color: pygame.Color = None,
+                 clicked_color: pygame.Color = None,
+                 clicked_hover_color: pygame.Color = None,
                  text_color: pygame.Color = None) -> None:
     
         self.rect = rect
-        #self.rect = pygame.Rect(0, 0, 1, 1) if rect is None else rect
-        self.color = pygame.Color("darkgray") if color is None else color
-        self.hover_color = pygame.Color("gray") if color is None else hover_color
-        self.text_color = pygame.Color("white") if color is None else text_color
-
         self.text = text
         self.event_attrs = dict() if event_attrs is None else event_attrs
         self.clicked = clicked
 
+        self.color = pygame.Color("gray50") if color is None else color
+        self.hover_color = pygame.Color("gray60") if color is None else hover_color
+        self.clicked_color = pygame.Color("gray30") if color is None else clicked_color
+        self.clicked_hover_color = pygame.Color("gray40") if color is None else clicked_hover_color
+        self.text_color = pygame.Color("white") if color is None else text_color
+
+
     def is_hovered(self, pos: Sequence) -> bool:
-        return self.collidepoint(pos)
+        return self.rect.collidepoint(pos)
 
     def draw(self, surface: pygame.Surface) -> None:
-
-        if self.rect.collidepoint(pygame.mouse.get_pos()):
+        cur_color = pygame.Color("blue")
+        if self.is_hovered(pygame.mouse.get_pos()):
             if self.clicked:
-                current_color = self.clicked_hover_color
+                cur_color = self.clicked_hover_color
             else:
-                current_color = self.hover_color
+                cur_color = self.hover_color
         else:
             if self.clicked:
-                current_color = self.clicked_color
+                cur_color = self.clicked_color
             else:
-                current_color = self.color
-
-        pygame.draw.rect(surface, current_color, self.rect, 2)
+                cur_color = self.color
+        pygame.draw.rect(surface, cur_color, self.rect, 0)
         
         if self.rect.height >= 10:
             font = pygame.font.SysFont(None, int(self.rect.height))
             text = font.render(self.text, 1, self.text_color)
             surface.blit(text, text.get_rect(center=self.rect.center))
-    
+
     def click(self, mouse_button: int = 1):
         outattr = self.event_attrs.copy()
         outattr["mouse_button"] = mouse_button
@@ -61,31 +64,23 @@ class Button(pygame.Rect):
 
 class UI:
     def __init__(self) -> None:
-        self.buttons = list()
+        self.buttons = dict()
 
-    def add(self, button: Button) -> bool:
-        """
-        if button.collidelist(self.buttons) == -1:
-            self.buttons.append(button)
-            return True
-        else:
-            return False
-        """
-        self.buttons.append(button)
-        return True
+    def add(self, key: str, button: Button) -> None:
+        self.buttons[key] = button
+        self.buttons[key].event_attrs["key"] = key
+
+    def clear(self) -> None:
+        self.buttons = dict()
 
     def draw(self, surface: pygame.Surface) -> None:
-        for b in self.buttons:
-           b.draw(surface) 
+        for key, b in self.buttons.items():
+            b.draw(surface) 
 
     def click(self, pos: Sequence, mouse_button: int = 1) -> None:
-        for b in self.buttons:
+        for key, b in self.buttons.items():
             if b.rect.collidepoint(pos):
                 b.click(mouse_button)
                 return
-
-        #index = pygame.Rect(pos, (0, 0)).collidelist(self.buttons)
-        #if index != -1:
-        #    self.buttons[index].click()
 
 

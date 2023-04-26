@@ -45,5 +45,17 @@ def draw_nice_line(surface: pygame.Surface,
 
     surface.blit(line, rect)
 
+    pygame.draw.circle(surface, color, start_pos, width/2)
+    pygame.draw.circle(surface, color, end_pos,   width/2)
+
     return rect
+
+def rect_center(center_x: float, 
+                center_y: float, 
+                width: float, 
+                height: float) -> pygame.Rect:
+    return pygame.Rect(center_x - width/2, 
+                       center_y - height/2,
+                       width,
+                       height)
 
