@@ -35,12 +35,13 @@ class Button(pygame.Rect):
         self.text_color          = pygame.Color("white")  if color is None else text_color
 
 
-    def is_hovered(self, pos: Sequence) -> bool:
-        return self.rect.collidepoint(pos)
+    def is_hovered(self, pos: Sequence = None) -> bool:
+        return False if pos is None else self.rect.collidepoint(pos)
 
-    def draw(self, surface: pygame.Surface) -> None:
+
+    def draw(self, surface: pygame.Surface, hover: bool = True) -> None:
         cur_color = pygame.Color("blue")
-        if self.is_hovered(pygame.mouse.get_pos()):
+        if hover and self.is_hovered(pygame.mouse.get_pos()):
             if self.clicked:
                 cur_color = self.clicked_hover_color
             else:
@@ -68,9 +69,8 @@ class UI(UserDict):
         UserDict.__setitem__(self, key, button)
         UserDict.__getitem__(self, key).event_attrs["key"] = key
 
-    def draw(self, surface: pygame.Surface) -> None:
-        for b in self.values():
-            b.draw(surface) 
+    def draw(self, surface: pygame.Surface, hover: bool = True) -> None:
+        for b in self.values(): b.draw(surface, hover)
 
     def click(self, pos: Sequence, mouse_button: int = 1) -> None:
         for b in self.values():

@@ -55,5 +55,16 @@ def rect_center(center: Sequence[float],
     return pygame.Rect((center[0] - size[0]/2, 
                         center[1] - size[1]/2), size)
 
+def hue_to_color(hue: int) -> pygame.Color:
+    color = pygame.Color(0)
+    color.hsla = (hue, 100, 50, 100)
+    return color
+
+def color_multilerp(colors: Sequence[pygame.Color]):
+    newcolor = pygame.Color(0)
+    for idx, color in enumerate(colors):
+        newcolor = newcolor.lerp(color, 1 / (idx + 1))
+    return newcolor
+
 
 

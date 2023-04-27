@@ -9,8 +9,7 @@ import os
 import pygame
 
 import board
-from pygame_helper import draw_nice_line
-from pygame_helper import rect_center
+from pygame_helper import *
 import ui
 
 
@@ -97,20 +96,26 @@ class Game:
         
     def draw_board(self) -> None:
         self.surface.fill((50, 50, 50))
-
-        border_color = pygame.Color(0)
-        border_color.hsla = (self.board.players[self.board.turn].hue, 100, 50, 100)
+        border_color = hue_to_color(self.board.get_player().hue)
         pygame.draw.rect(self.surface, border_color, self.surface.get_rect(), 2)
 
         self.board_ui.draw(self.surface)
         self.draw_sos_list()
 
     def draw_end(self) -> None:
-        self.draw_board()
+        self.board_ui.draw(self.surface, False)
+        self.draw_sos_list()
 
-        gray_rect = pygame.Surface(self.surface.get_size())
-        gray_rect.set_alpha(128)
-        gray_rect.fill((128, 128, 128))
+        match self.board.game_mode:
+            case "simple":
+                victor_hue = self.board.players[self.board.simple_victor()].hue
+                victor_color = hue_to_color()
+            case "general":
+                self.board.general_victor()
+
+        cover_rect = pygame.Surface(self.surface.get_size())
+        cover_rect.set_alpha(10)
+        cover_rect.fill(victor_color)
         self.surface.blit(gray_rect, (0, 0))
 
         #rect = pygame.Rect(0, 0, 200, 200)
@@ -119,10 +124,8 @@ class Game:
 
     def draw_sos_list(self) -> None:
         for sos in self.board.sos_list:
-            line_color = pygame.Color(0)
-            line_color.hsla = (self.board.players[sos.player_id].hue, 100, 50, 100)
             draw_nice_line(self.surface,
-                           line_color, 
+                           hue_to_color(self.board.get_player().hue), 
                            self.board_ui[f"{sos.p1[0]} {sos.p1[1]}"].rect.center, 
                            self.board_ui[f"{sos.p2[0]} {sos.p2[1]}"].rect.center,
                            max(1, self.size / self.board.num_cols * 0.1))
@@ -159,6 +162,8 @@ class Game:
     def board_clicks(self, col: int, row: int, button: int = 1) -> None:
         self.board.make_move(col, row, board.Mark.S if button == 1 else board.Mark.O)
         self.board_ui[f"{col} {row}"].text = self.board.get_char(col, row)
+        if self.board.end:
+            self.state = "end"
 
     def end_clicks(self, pos: Sequence, button: int = 1) -> None:
         print("Endgame click detection not implemented")
@@ -188,15 +193,15 @@ class Game:
 
                     case ui.BUTTON_CLICK:
                         match self.state:
-                            case "menu": self.menu_clicks(e.key, e.mouse_button)
-                            case "play": self.board_clicks(e.x, e.y, e.mouse_button)
-                            #case "end":  self.end_clicks()
+                            case "menu" : self.menu_clicks(e.key, e.mouse_button)
+                            case "play" : self.board_clicks(e.x, e.y, e.mouse_button)
+                            case "end"  : self.end_clicks()
 
 
             match self.state:
-                case "menu": self.draw_menu()
-                case "play": self.draw_board()
-                #case "end":  self.draw_end()
+                case "menu" : self.draw_menu()
+                case "play" : self.draw_board()
+                case "end"  : self.draw_end()
 
             pygame.display.update()
 

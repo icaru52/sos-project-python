@@ -327,7 +327,7 @@ class Board:
             self.set_mark(col, row, mark)
 
             new_sos_list = self.creates_sos(col, row, mark)
-            self.players[self.turn].score += len(new_sos_list)
+            self.get_player().score += len(new_sos_list)
             self.sos_list.extend(new_sos_list)
 
             if self.detect_end():
@@ -349,7 +349,7 @@ class Board:
             self.set_mark(coords, mark)
 
             new_sos_list = self.creates_sos(coords, mark)
-            self.players[self.turn].score += len(new_sos_list)
+            self.get_player().score += len(new_sos_list)
             self.sos_list.extend(new_sos_list)
 
             self.turn = (self.turn + 1) % len(self.players)
@@ -394,6 +394,9 @@ class Board:
                                             (col - x_off, row - y_off),
                                             self.turn))
         return sos_list
+
+    def get_player(self) -> Player:
+        return self.players[self.turn]
 
     def general_end(self) -> bool:
         return self.mark_count == self.num_cols * self.num_rows
