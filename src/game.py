@@ -26,7 +26,8 @@ class Game:
         self.board = board.Board()
 
         self.board_ui = ui.UI()
-        self.menu_ui = ui.UI()
+        self.menu_ui  = ui.UI()
+        self.end_ui   = ui.UI()
 
         self.populate_buttons()
         self.resize()
@@ -52,6 +53,9 @@ class Game:
             "general_game" : ui.Button(rect, "General Game", {}, False),
             "start_game"   : ui.Button(rect, "START")
         })
+
+        self.end_ui.clear()
+        self.end_ui["new_game"] = ui.Button(rect, "New Game?")
 
     def resize(self) -> None:
         self.size = min(self.surface.get_size())
@@ -89,6 +93,9 @@ class Game:
         self.menu_ui["start_game"].rect   = rect_center((width * 1/2, height * 5/6),
                                                         (width * 1/2, height * 1/6))
     
+        self.end_ui["new_game"].rect      = rect_center((width * 1/2, height * 1/2),
+                                                        (width * 1/2, height * 1/2))
+
 
     def draw_menu(self) -> None:
         self.surface.fill((50, 50, 50))
@@ -103,24 +110,28 @@ class Game:
         self.draw_sos_list()
 
     def draw_end(self) -> None:
+        self.surface.fill((50, 50, 50))
         self.board_ui.draw(self.surface, False)
         self.draw_sos_list()
 
         match self.board.game_mode:
             case "simple":
                 victor_hue = self.board.players[self.board.simple_victor()].hue
-                victor_color = hue_to_color()
+                victor_color = hue_to_color(victor_hue)
             case "general":
-                self.board.general_victor()
+                victors = self.board.general_victors()
+                victor_hues = [self.board.players[victor].hue for victor in victors]
+                victor_colors = [hue_to_color(hue) for hue in victor_hues]
+                victor_color = color_multilerp(victor_colors)
+
+                #victor_color = color_multilerp([hue_to_color(self.board.players[victor]) for victor in self.board.general_victors()])
 
         cover_rect = pygame.Surface(self.surface.get_size())
-        cover_rect.set_alpha(10)
+        cover_rect.set_alpha(50)
         cover_rect.fill(victor_color)
-        self.surface.blit(gray_rect, (0, 0))
+        self.surface.blit(cover_rect, (0, 0))
 
-        #rect = pygame.Rect(0, 0, 200, 200)
-        #rect.center = self.surface.get_rect().center
-        #draw_button(self.surface, (0, 0, 0), (50, 50, 50), "end", rect)
+        self.end_ui.draw(self.surface)
 
     def draw_sos_list(self) -> None:
         for sos in self.board.sos_list:

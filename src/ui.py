@@ -65,6 +65,11 @@ class Button(pygame.Rect):
 
 
 class UI(UserDict):
+    #def __init__(self):
+    #    pass
+        
+    #needs_refresh = False        
+
     def __setitem__(self, key: str, button: Button):
         UserDict.__setitem__(self, key, button)
         UserDict.__getitem__(self, key).event_attrs["key"] = key
