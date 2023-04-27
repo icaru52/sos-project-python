@@ -72,23 +72,23 @@ class Game:
                                 cell_size, 
                                 cell_size))
 
-        self.menu_ui["size_down"].rect    = rect_center(width * 1/6, height * 1/6,
-                                                        width * 1/6, height * 1/6)
+        self.menu_ui["size_down"].rect    = rect_center((width * 1/6, height * 1/6),
+                                                        (width * 1/6, height * 1/6))
  
-        self.menu_ui["cur_size"].rect     = rect_center(width * 1/2, height * 1/6,
-                                                        width * 1/6, height * 1/6)
+        self.menu_ui["cur_size"].rect     = rect_center((width * 1/2, height * 1/6),
+                                                        (width * 1/6, height * 1/6))
         
-        self.menu_ui["size_up"].rect      = rect_center(width * 5/6, height * 1/6,
-                                                        width * 1/6, height * 1/6)
+        self.menu_ui["size_up"].rect      = rect_center((width * 5/6, height * 1/6),
+                                                        (width * 1/6, height * 1/6))
 
-        self.menu_ui["simple_game"].rect  = rect_center(width * 1/4, height * 1/2,
-                                                        width * 1/4, height * 1/6)
+        self.menu_ui["simple_game"].rect  = rect_center((width * 1/4, height * 1/2),
+                                                        (width * 1/4, height * 1/6))
 
-        self.menu_ui["general_game"].rect = rect_center(width * 3/4, height * 1/2,
-                                                        width * 1/4, height * 1/6)
+        self.menu_ui["general_game"].rect = rect_center((width * 3/4, height * 1/2),
+                                                        (width * 1/4, height * 1/6))
 
-        self.menu_ui["start_game"].rect   = rect_center(width * 1/2, height * 5/6,
-                                                        width * 1/2, height * 1/6)
+        self.menu_ui["start_game"].rect   = rect_center((width * 1/2, height * 5/6),
+                                                        (width * 1/2, height * 1/6))
     
 
     def draw_menu(self) -> None:
@@ -97,6 +97,11 @@ class Game:
         
     def draw_board(self) -> None:
         self.surface.fill((50, 50, 50))
+
+        border_color = pygame.Color(0)
+        border_color.hsla = (self.board.players[self.board.turn].hue, 100, 50, 100)
+        pygame.draw.rect(self.surface, border_color, self.surface.get_rect(), 2)
+
         self.board_ui.draw(self.surface)
         self.draw_sos_list()
 

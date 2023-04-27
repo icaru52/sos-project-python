@@ -50,7 +50,10 @@ def draw_nice_line(surface: pygame.Surface,
 
     return rect
 
-def rect_center(center_x: float, center_y: float, 
-                width: float, height: float) -> pygame.Rect:
-    return pygame.Rect(center_x - width/2, center_y - height/2, width, height)
+def rect_center(center: Sequence[float], 
+                size: Sequence[float]) -> pygame.Rect:
+    return pygame.Rect((center[0] - size[0]/2, 
+                        center[1] - size[1]/2), size)
+
+
 

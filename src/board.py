@@ -330,7 +330,10 @@ class Board:
             self.players[self.turn].score += len(new_sos_list)
             self.sos_list.extend(new_sos_list)
 
-            self.turn = (self.turn + 1) % len(self.players)
+            if self.detect_end():
+                self.end = True
+            else:
+                self.turn = (self.turn + 1) % len(self.players)
 
             return True
         else:
@@ -403,18 +406,11 @@ class Board:
     def simple_end(self) -> bool:
         return len(self.sos_list) > 0 or self.general_end()
 
-    def end(self) -> bool:
+    def detect_end(self) -> bool:
         match self.game_mode:
-            case "general":
-                self.general_end()
-
-            case "simple":
-                self.simple_end()
-
-            case _:
-                raise NotImplementedError("Game mode " + 
-                                          self.game_mode + 
-                                          " does not exist.")
+            case "general" : return self.general_end()
+            case "simple"  : return self.simple_end()
+            case _: raise NotImplementedError(f"Game mode {self.game_mode} does not exist.")
 
 
     # Can return a victor even when game isn't over
@@ -437,7 +433,7 @@ class Board:
         else:
             return -1
 
-    def reset(self, 
+    def reset(self,
               num_cols: int = -1, 
               num_rows: int = -1, 
               game_mode: str = "simple") -> None:
