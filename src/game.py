@@ -114,17 +114,9 @@ class Game:
         self.board_ui.draw(self.surface, False)
         self.draw_sos_list()
 
-        match self.board.game_mode:
-            case "simple":
-                victor_hue = self.board.players[self.board.simple_victor()].hue
-                victor_color = hue_to_color(victor_hue)
-            case "general":
-                victors = self.board.general_victors()
-                victor_hues = [self.board.players[victor].hue for victor in victors]
-                victor_colors = [hue_to_color(hue) for hue in victor_hues]
-                victor_color = color_multilerp(victor_colors)
-
-                #victor_color = color_multilerp([hue_to_color(self.board.players[victor]) for victor in self.board.general_victors()])
+        victors = self.board.victors()
+        victor_colors = [hue_to_color(victor.hue) for victor in victors]
+        victor_color = color_multilerp(victor_colors)
 
         cover_rect = pygame.Surface(self.surface.get_size())
         cover_rect.set_alpha(50)
@@ -136,7 +128,7 @@ class Game:
     def draw_sos_list(self) -> None:
         for sos in self.board.sos_list:
             draw_nice_line(self.surface,
-                           hue_to_color(self.board.get_player().hue), 
+                           hue_to_color(self.board.players[sos.player_id].hue), 
                            self.board_ui[f"{sos.p1[0]} {sos.p1[1]}"].rect.center, 
                            self.board_ui[f"{sos.p2[0]} {sos.p2[1]}"].rect.center,
                            max(1, self.size / self.board.num_cols * 0.1))
@@ -176,8 +168,8 @@ class Game:
         if self.board.end:
             self.state = "end"
 
-    def end_clicks(self, pos: Sequence, button: int = 1) -> None:
-        print("Endgame click detection not implemented")
+    def end_clicks(self, key: str, button: int = 1) -> None:
+       self.state = "menu" 
 
     def start(self) -> None:
         running = True
@@ -198,15 +190,15 @@ class Game:
 
                     case pygame.MOUSEBUTTONUP:
                         match self.state:
-                            case "menu": self.menu_ui.click(e.pos, e.button)
-                            case "play": self.board_ui.click(e.pos, e.button)
-                            #case "end":  self.end_ui.click(e.pos, e.button)
+                            case "menu" : self.menu_ui.click(e.pos, e.button)
+                            case "play" : self.board_ui.click(e.pos, e.button)
+                            case "end"  : self.end_ui.click(e.pos, e.button)
 
                     case ui.BUTTON_CLICK:
                         match self.state:
                             case "menu" : self.menu_clicks(e.key, e.mouse_button)
                             case "play" : self.board_clicks(e.x, e.y, e.mouse_button)
-                            case "end"  : self.end_clicks()
+                            case "end"  : self.end_clicks(e.key, e.mouse_button)
 
 
             match self.state:

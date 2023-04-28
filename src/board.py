@@ -6,6 +6,7 @@
 
 from collections.abc import Sequence
 from enum import Enum
+from typing import NamedTuple
 
 #class Vector:
 #    """For storing coordinates"""
@@ -158,6 +159,13 @@ class Player:
         return f"({self.name} has hue {self.hue} and has {self.score} points)"
 
 
+class Move(NamedTuple):
+    col: int
+    row: int
+    mark: Mark
+    player: int
+    sos_count: int = 0
+
 class Board:
     """SOS game."""
     def __init__(self,
@@ -166,7 +174,7 @@ class Board:
                  players: list[Player] = None) -> None:
 
     #def __init__(self,
-    #             dimensions: tuple[int],
+    #             size: tuple[int],
     #             players: list[Player] = None) -> None:
 
         if num_cols <= 3 or num_rows <= 3:
@@ -189,6 +197,8 @@ class Board:
 
         self.sos_list = []
         self.turn = 0
+
+        self.move_hist = []
 
         self.game_mode = "simple"
 
@@ -310,6 +320,7 @@ class Board:
         self.grid = [Mark.EMPTY] * (self.num_cols * self.num_rows)
         self.mark_count = 0
         self.sos_list = []
+        self.move_hist = []
 
     """
     def clear(self) -> None:
@@ -329,6 +340,9 @@ class Board:
             new_sos_list = self.creates_sos(col, row, mark)
             self.get_player().score += len(new_sos_list)
             self.sos_list.extend(new_sos_list)
+
+            self.move_hist.append(
+                    Move(col, row, mark, self.turn, len(new_sos_list)))
 
             if self.detect_end():
                 self.end = True
@@ -418,7 +432,7 @@ class Board:
 
     # Can return a victor even when game isn't over
     # Useful for listing current leader(s)
-    def general_victors(self) -> list[int]:
+    def general_victors(self) -> list[Player]:
         victors = []
         highscore = 0
 
@@ -430,22 +444,29 @@ class Board:
                 victors.append(player)
         return victors
 
-    def simple_victor(self) -> int:
+    def simple_victor(self) -> list[Player]:
         if len(self.sos_list) > 0:
-            return self.sos_list[0].player_id
+            return [self.players[self.sos_list[0].player_id]]
         else:
-            return -1
+            return self.players
+
+    def victors(self) -> list[Player]:
+        match self.game_mode:
+            case "simple"  : return self.simple_victor()
+            case "general" : return self.general_victors()
+            case _: raise NotImplementedError(f"Game mode {self.game_mode} does not exist.")
 
     def reset(self,
               num_cols: int = -1, 
               num_rows: int = -1, 
-              game_mode: str = "simple") -> None:
+              game_mode: str = None) -> None:
         if num_cols >= 3 and num_rows >= 3:
             self.num_cols = num_cols
             self.num_rows = num_rows
         self.clear()
         self.turn = 0
         self.end = False
-
-        self.game_mode = game_mode
+ 
+        if game_mode in ("simple", "general"):
+            self.game_mode = game_mode
 
