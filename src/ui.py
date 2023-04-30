@@ -54,20 +54,14 @@ class Button(pygame.Rect):
         pygame.draw.rect(surface, cur_color, self.rect, 0)
         
         if self.rect.height >= 5:
-            text = pygame.font.SysFont(None, 20).render(self.text, 1, (0,0,0))
-            rect = text.get_rect().fit(self.rect)
-            rect.center = self.rect.center
-
-            pygame.draw.rect(surface, (0,0,255), rect)
-
-            font = pygame.font.SysFont(None, int(rect.height))
-            test = font.size(self.text)
-            pygame.draw.rect(surface, (0, 255,0), pygame.Rect(rect.topleft, test))
+            font = pygame.font.SysFont(None, 20)
+            text = font.render(self.text, 1, (0,0,0))
+            size = int(text.get_rect().fit(self.rect).height)
+ 
+            font = pygame.font.SysFont(None, size)
             text = font.render(self.text, 1, self.text_color)
-            
-            pygame.draw.rect(surface, (255,0,0), text.get_rect(center=self.rect.center))
+
             surface.blit(text, text.get_rect(center=self.rect.center))
-            #surface.blit(text, rect)
 
     def click(self, mouse_button: int = 1):
         outattr = self.event_attrs.copy()
