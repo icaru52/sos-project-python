@@ -55,6 +55,7 @@ class Game:
         })
 
         self.end_ui.clear()
+        self.end_ui["victor"]   = ui.Button(rect, "Victor")
         self.end_ui["new_game"] = ui.Button(rect, "New Game?")
 
     def resize(self) -> None:
@@ -92,9 +93,12 @@ class Game:
 
         self.menu_ui["start_game"].rect   = rect_center((width * 1/2, height * 5/6),
                                                         (width * 1/2, height * 1/6))
-    
-        self.end_ui["new_game"].rect      = rect_center((width * 1/2, height * 1/2),
-                                                        (width * 1/2, height * 1/2))
+        
+        self.end_ui["victor"].rect        = rect_center((width * 1/2, height * 1/4),
+                                                        (width * 1/4, height * 1/4))
+
+        self.end_ui["new_game"].rect      = rect_center((width * 1/2, height * 3/4),
+                                                        (width * 1/4, height * 1/4))
 
 
     def draw_menu(self) -> None:
@@ -122,6 +126,16 @@ class Game:
         cover_rect.set_alpha(50)
         cover_rect.fill(victor_color)
         self.surface.blit(cover_rect, (0, 0))
+
+        if len(victors) == 1:
+
+            victor_names = "Victor: " + victors[0].name
+        else:
+            victor_names = "Victors:"
+            for victor in victors:
+                victor_names += " " + victor.name
+
+        self.end_ui["victor"].text = victor_names
 
         self.end_ui.draw(self.surface)
 

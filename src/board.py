@@ -191,7 +191,7 @@ class Board:
         self.mark_count = 0
 
         if players is None:
-            self.players = [Player("One", 0), Player("Two", 240)]
+            self.players = [Player("Player One", 0), Player("Player Two", 240)]
         else:
             self.players = players
 
