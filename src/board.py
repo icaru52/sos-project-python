@@ -5,32 +5,9 @@
 """Basic classes and methods for an SOS game. User interface not included."""
 
 from collections.abc import Sequence
+from copy import deepcopy
 from enum import Enum
 from typing import NamedTuple
-
-#class Vector:
-#    """For storing coordinates"""
-#    def __init__(self, x: int, y: int) -> None:
-#        self.x = x
-#        self.y = y
-#
-#    def __add__(self, other) -> Vector:
-#        if self.__class__ is not other.__class__:
-#            return NotImplemented
-#        else:
-#            return Vector(self.x + other.x, self.y + other.y)
-#
-#    def __sub__(self, other) -> Vector:
-#        if self.__class__ is not other.__class__:
-#            return NotImplemented
-#        else:
-#            return Vector(self.x - other.x, self.y - other.y)
-#
-#    def __mul__(self, scalar: int) -> Vector:
-#        if not isinstance(scalar, int):
-#            return NotImplemented
-#        else:
-#            return Vector(self.x * scalar, self.y * scalar)
 
 class Mark(Enum):
     """Possible states of an SOS grid space."""
@@ -79,29 +56,6 @@ class Mark(Enum):
 
 class SOS:
     """Stores the start coordinate, end coordinate, and player id of an SOS."""
-    
-    """
-    def __init__(self,
-                 points: Sequence[Sequence[int]],
-                 player_id: int) -> None:
-
-        if any(len(p) <= 0 for p in self.points):
-            raise ValueError("points must have a positive number of dimensions")
-
-        elif any(len(point) != len(self.points[0]) for point in self.points):
-            # TODO: make this not double compare first element
-            raise ValueError("points must have the same length/dimensionality")
-
-        #elif p1 == p2: # TODO: fix this
-        #    raise ValueError("points cannot be the same")
-
-        elif player_id < 0:
-            raise ValueError("player id may not be negative")
-
-        else:
-            self.points = points
-            self.player_id = player_id
-    """
 
     def __init__(self,
                  p1: Sequence[int],
@@ -131,11 +85,6 @@ class SOS:
 
     def __repr__(self) -> None:
         return f"SOS({self.p1!r}, {self.p2!r}, {self.player_id!r})"
-
-    """
-    def __repr__(self) -> None:
-        return f"SOS({self.points!r}, {self.player_id!r})"
-    """
 
     def __str__(self) -> None:
         return f"(SOS from {self.p1} to {self.p2} by player {self.player_id})"
@@ -207,11 +156,6 @@ class Board:
     def __repr__(self) -> None:
         return f"Board({self.num_cols}, {self.num_rows}, {self.players!r})"
 
-    """
-    def __repr__(self) -> None:
-        return f"Board({self.dimensions}, {self.players!r})"
-    """
-
     def __str__(self) -> None:
         temp = " " + "-" * self.num_cols + "\n"
         for y in range(self.num_rows):
@@ -232,32 +176,14 @@ class Board:
         return (0 <= col < self.num_cols and
                 0 <= row < self.num_rows)
 
-    """
-    def in_bounds(self, coords: Sequence[int]) -> bool:
-        return all(0 <= coord < axis for coord, axis in zip(coords, self.dimensions))
-    """
-
     def out_of_bounds(self, col: int, row: int) -> bool:
         return not self.in_bounds(col, row)
-
-    """
-    def out_of_bounds(self, coords: Sequence[int]) -> bool:
-        return not self.in_bounds(coords)
-    """
 
     def get_mark(self, col: int = -1, row: int = -1) -> Mark:
         if self.in_bounds(col, row):
             return self.grid[(row * self.num_cols) + col]
         else:
             return Mark.NONE
-
-    """
-    def get_mark(self, coords: Sequence[int]) -> Mark:
-        if self.in_bounds(coords):
-            return self.grid[] #TODO: fix this
-        else:
-            return Mark.NONE
-    """
 
     def get_char(self, col: int, row: int) -> str:
         match self.get_mark(col, row):
@@ -269,18 +195,6 @@ class Board:
                 return "S"
             case Mark.O:
                 return "O"
-    """
-    def get_char(self, coords: Sequence[int]) -> str:
-        match self.get_mark(coords):
-            case Mark.NONE:
-                return " "
-            case Mark.EMPTY:
-                return " "
-            case Mark.S:
-                return "S"
-            case Mark.O:
-                return "O"
-    """
 
     # Does not automatically remove broken SOSes
     def set_mark(self, col: int, row: int, mark: Mark) -> None:
@@ -298,36 +212,11 @@ class Board:
 
             self.grid[(row * self.num_cols) + col] = mark
 
-    """
-    # Does not automatically remove broken SOSes
-    def set_mark(self, coords: Sequence[int], mark: Mark) -> None:
-        if self.out_of_bounds(coords):
-            raise IndexError("tried to set mark out of bounds")
-
-        elif mark == Mark.NONE:
-            raise ValueError("cannot set a cell to NONE")
-
-        else:
-            if mark > self.get_mark(coords):
-                self.mark_count += 1
-            elif mark < self.get_mark(coords):
-                self.mark_count -= 1
-
-            self.grid[] = mark # TODO: fix this
-    """
-
     def clear(self) -> None:
         self.grid = [Mark.EMPTY] * (self.num_cols * self.num_rows)
         self.mark_count = 0
         self.sos_list = []
         self.move_hist = []
-
-    """
-    def clear(self) -> None:
-        self.grid = [Mark.EMPTY] * sum(self.dimensions)
-        self.mark_count = 0
-        self.sos_list = []
-    """
 
     # Assumes that col and row are in bounds
     def make_move(self, col: int, row: int, mark: Mark) -> bool:
@@ -353,25 +242,12 @@ class Board:
         else:
             return False
 
-    """
-    # Assumes that col and row are in bounds
-    def make_move(self, coords: Sequence[int], mark: Mark) -> bool:
-        if mark <= Mark.EMPTY:
-            raise ValueError("player cannot set a mark to empty")
-
-        elif self.get_mark(coords) == Mark.EMPTY:
-            self.set_mark(coords, mark)
-
-            new_sos_list = self.creates_sos(coords, mark)
-            self.get_player().score += len(new_sos_list)
-            self.sos_list.extend(new_sos_list)
-
-            self.turn = (self.turn + 1) % len(self.players)
-
-            return True
-        else:
-            return False
-    """
+    def undo_move(self) -> None:
+        if len(self.move_hist) > 0:
+            last_move = self.move_hist.pop(-1)
+            self.set_mark(last_move.col, last_move.row, Mark.EMPTY)
+            del self.sos_list[-last_move.sos_count:]
+            self.players[last_move.player].score -= last_move.sos_count
 
     # Assumes that col and row are in bounds
     # Assumes that the space is empty
@@ -415,18 +291,13 @@ class Board:
     def general_end(self) -> bool:
         return self.mark_count == self.num_cols * self.num_rows
 
-    """
-    def general_end(self) -> bool:
-        return self.mark_count == sum(self.dimensions)
-    """
-
     def simple_end(self) -> bool:
         return len(self.sos_list) > 0 or self.general_end()
 
     def detect_end(self) -> bool:
         match self.game_mode:
-            case "general" : return self.general_end()
             case "simple"  : return self.simple_end()
+            case "general" : return self.general_end()
             case _: raise NotImplementedError(f"Game mode {self.game_mode} does not exist.")
 
 
