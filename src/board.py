@@ -7,6 +7,8 @@
 from collections.abc import Sequence
 from copy import deepcopy
 from enum import Enum
+import math
+import random
 from typing import NamedTuple
 
 class Mark(Enum):
@@ -92,14 +94,15 @@ class SOS:
 
 class Player:
     """Stores a player's name, what hue to use in a gui, and their score."""
-    def __init__(self, name: str, hue: int = 0) -> None:
-        if hue < 0:
-            raise ValueError("player hue may not be negative")
+    def __init__(self, name: str, hue: int = 0, computer: bool = False) -> None:
+        if not 0 <= hue <= 360:
+            raise ValueError("player hue must be between 0 and 360")
 
         else:
             self.name = name
             self.hue = hue
             self.score = 0
+            self.computer = computer
 
     def __repr__(self) -> None:
         return f"Player({self.name}, {self.hue})"
@@ -122,10 +125,6 @@ class Board:
                  num_rows: int = 8,
                  players: list[Player] = None) -> None:
 
-    #def __init__(self,
-    #             size: tuple[int],
-    #             players: list[Player] = None) -> None:
-
         if num_cols <= 3 or num_rows <= 3:
             raise ValueError("board dimensions must be greater than or equal to 3x3")
 
@@ -134,9 +133,7 @@ class Board:
 
         self.num_cols = num_cols
         self.num_rows = num_rows
-        #self.dimensions = dimensions 
         self.grid = [Mark.EMPTY] * (num_cols * num_rows)
-        #self.grid = [Mark.EMPTY] * sum(dimensions)
         self.mark_count = 0
 
         if players is None:
@@ -161,7 +158,7 @@ class Board:
         for y in range(self.num_rows):
             temp += "|"
             for x in range(self.num_cols):
-                match self.get_mark(x, y):
+                match self.get_mark((x, y)):
                     case Mark.EMPTY:
                         temp += " "
                     case Mark.S:
@@ -172,21 +169,21 @@ class Board:
         temp += " " + "-" * self.num_cols
         return temp
 
-    def in_bounds(self, col: int, row: int) -> bool:
-        return (0 <= col < self.num_cols and
-                0 <= row < self.num_rows)
+    def in_bounds(self, pos: Sequence[int]) -> bool:
+        return (0 <= pos[0] < self.num_cols and
+                0 <= pos[1] < self.num_rows)
 
-    def out_of_bounds(self, col: int, row: int) -> bool:
-        return not self.in_bounds(col, row)
+    def out_of_bounds(self, pos: Sequence[int]) -> bool:
+        return not self.in_bounds(pos)
 
-    def get_mark(self, col: int = -1, row: int = -1) -> Mark:
-        if self.in_bounds(col, row):
-            return self.grid[(row * self.num_cols) + col]
+    def get_mark(self, pos: Sequence[int] = None) -> Mark:
+        if self.in_bounds(pos):
+            return self.grid[(pos[1] * self.num_cols) + pos[0]]
         else:
             return Mark.NONE
 
-    def get_char(self, col: int, row: int) -> str:
-        match self.get_mark(col, row):
+    def get_char(self, pos: Sequence[int]) -> str:
+        match self.get_mark(pos):
             case Mark.NONE:
                 return " "
             case Mark.EMPTY:
@@ -197,46 +194,48 @@ class Board:
                 return "O"
 
     # Does not automatically remove broken SOSes
-    def set_mark(self, col: int, row: int, mark: Mark) -> None:
-        if self.out_of_bounds(col, row):
+    def set_mark(self, pos: Sequence[int], mark: Mark) -> None:
+        if self.out_of_bounds(pos):
             raise IndexError("tried to set mark out of bounds")
 
         elif mark == Mark.NONE:
             raise ValueError("cannot set a cell to NONE")
 
         else:
-            if mark > self.get_mark(col, row):
+            if mark > self.get_mark(pos):
                 self.mark_count += 1
-            elif mark < self.get_mark(col, row):
+            elif mark < self.get_mark(pos):
                 self.mark_count -= 1
 
-            self.grid[(row * self.num_cols) + col] = mark
+            self.grid[(pos[1] * self.num_cols) + pos[0]] = mark
 
     def clear(self) -> None:
         self.grid = [Mark.EMPTY] * (self.num_cols * self.num_rows)
         self.mark_count = 0
         self.sos_list = []
         self.move_hist = []
+        for player in self.players:
+            player.score = 0
 
     # Assumes that col and row are in bounds
-    def make_move(self, col: int, row: int, mark: Mark) -> bool:
+    def make_move(self, pos: Sequence[int], mark: Mark) -> bool:
         if mark <= Mark.EMPTY:
             raise ValueError("player cannot set a mark to empty")
 
-        elif self.get_mark(col, row) == Mark.EMPTY:
-            self.set_mark(col, row, mark)
+        elif self.get_mark(pos) == Mark.EMPTY:
+            self.set_mark(pos, mark)
 
-            new_sos_list = self.creates_sos(col, row, mark)
+            new_sos_list = self.creates_sos(pos, mark)
             self.get_player().score += len(new_sos_list)
             self.sos_list.extend(new_sos_list)
 
             self.move_hist.append(
-                    Move(col, row, mark, self.turn, len(new_sos_list)))
+                    Move(pos[0], pos[1], mark, self.turn, len(new_sos_list)))
 
             if self.detect_end():
                 self.end = True
             else:
-                self.turn = (self.turn + 1) % len(self.players)
+                self.turn = self.get_next_turn()
 
             return True
         else:
@@ -245,16 +244,16 @@ class Board:
     def undo_move(self) -> None:
         if len(self.move_hist) > 0:
             last_move = self.move_hist.pop(-1)
-            self.set_mark(last_move.col, last_move.row, Mark.EMPTY)
+            self.set_mark((last_move.col, last_move.row), Mark.EMPTY)
             del self.sos_list[-last_move.sos_count:]
             self.players[last_move.player].score -= last_move.sos_count
 
     # Assumes that col and row are in bounds
     # Assumes that the space is empty
-    def creates_sos(self, col: int, row: int, mark: Mark) -> list[SOS]:
+    def creates_sos(self, pos: Sequence[int], mark: Mark) -> list[SOS]:
         sos_list = []
 
-        if self.out_of_bounds(col, row):
+        if self.out_of_bounds(pos):
             return sos_list
 
         offsets = ((-1,-1), # north west
@@ -268,22 +267,64 @@ class Board:
 
         match mark:
             case Mark.S:
-                for x_off, y_off in offsets:
-                    if (self.get_mark(col + x_off, row + y_off) == Mark.O and
-                        self.get_mark(col + x_off*2, row + y_off*2) == Mark.S):
+                for off in offsets:
+                    if (self.get_mark((pos[0] + off[0]  , pos[1] + off[1]  )) == Mark.O and
+                        self.get_mark((pos[0] + off[0]*2, pos[1] + off[1]*2)) == Mark.S):
 
-                        sos_list.append(SOS((col, row),
-                                            (col + x_off*2, row + y_off*2),
+                        sos_list.append(SOS(pos,
+                                            (pos[0] + off[0]*2, pos[1] + off[1]*2),
                                             self.turn))
             case Mark.O:
-                for x_off, y_off in offsets[:4]:
-                    if (self.get_mark(col + x_off, row + y_off) == Mark.S and
-                        self.get_mark(col - x_off, row - y_off) == Mark.S):
+                for off in offsets[:4]:
+                    if (self.get_mark((pos[0] + off[0], pos[1] + off[1])) == Mark.S and
+                        self.get_mark((pos[0] - off[0], pos[1] - off[1])) == Mark.S):
 
-                        sos_list.append(SOS((col + x_off, row + y_off),
-                                            (col - x_off, row - y_off),
+                        sos_list.append(SOS((pos[0] + off[0], pos[1] + off[1]),
+                                            (pos[0] - off[0], pos[1] - off[1]),
                                             self.turn))
         return sos_list
+
+    def get_random_legal_position(self) -> tuple[int, int]:
+        idx = -1
+        mark = Mark.NONE
+        while mark != Mark.EMPTY:
+            idx, mark = random.choice(enumerate(self.grid))
+        return (idx % self.num_cols, math.floor(idx / self.num_cols))
+
+    def get_optimal_move(self) -> Move:
+        test_board = deepcopy(self)
+
+        best_score = 0
+        best_move = None
+
+        for row in test_board.num_rows:
+            for col in test_board.num_cols:
+                if test_board.get_mark((col, row)) == Mark.EMPTY:
+                    for mark in (mark.S, Mark.O):
+                        
+                        sos_list = test_board.creates_sos((col, row), mark)
+                        move = Move(col, row, mark, test_board.turn, len(sos_list))
+                        
+                        if move.sos_count > best_score:
+                            match test_board.game_mode:
+                                case "simple":
+                                    return move
+                                
+                                case "general":
+                                    best_score = move.sos_count
+                                    best_move = move
+
+        if best_move is None:
+            return self.get_random_legal_position()
+        else:
+            return best_move
+
+    def make_computer_move(self) -> None:
+        move = self.get_optimal_move()
+        self.make_move(move.col, move.row, move.mark)
+
+    def get_next_turn(self) -> int:
+        return (self.turn + 1) % len(self.players)
 
     def get_player(self) -> Player:
         return self.players[self.turn]
@@ -331,9 +372,11 @@ class Board:
               num_cols: int = -1, 
               num_rows: int = -1, 
               game_mode: str = None) -> None:
+        
         if num_cols >= 3 and num_rows >= 3:
             self.num_cols = num_cols
             self.num_rows = num_rows
+        
         self.clear()
         self.turn = 0
         self.end = False

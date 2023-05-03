@@ -43,7 +43,7 @@ class Game:
         for y in range(self.board.num_rows):
             for x in range(self.board.num_cols):
                 self.board_ui[f"{x} {y}"] = ui.Button(rect, 
-                                                      self.board.get_char(x, y), 
+                                                      self.board.get_char((x, y)), 
                                                       {"x": x, "y": y})
 
         self.menu_ui = ui.UI({
@@ -93,6 +93,8 @@ class Game:
 
         self.menu_ui["general_game"].rect = rect_center((width * 3/4, height * 1/2),
                                                         (width * 1/4, height * 1/6))
+
+        self.menu_ui["player_one_computer"]
 
         self.menu_ui["start_game"].rect   = rect_center((width * 1/2, height * 5/6),
                                                         (width * 1/2, height * 1/6))
@@ -182,10 +184,14 @@ class Game:
                 self.state = "play"
 
     def board_clicks(self, col: int, row: int, button: int = 1) -> None:
-        self.board.make_move(col, row, board.Mark.S if button == 1 else board.Mark.O)
-        self.board_ui[f"{col} {row}"].text = self.board.get_char(col, row)
+        self.board.make_move((col, row), board.Mark.S if button == 1 else board.Mark.O)
+        self.board_ui[f"{col} {row}"].text = self.board.get_char((col, row))
         if self.board.end:
             self.state = "end"
+
+        if self.board.get_player.computer:
+            move = self.board.get_optimal_move()
+            self.board_clicks(move.col, move.row, move.mark)
 
     def end_clicks(self, key: str, button: int = 1) -> None:
         match key:
