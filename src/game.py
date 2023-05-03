@@ -34,6 +34,8 @@ class Game:
 
         self.state = "menu"
 
+        self.running = False
+
     def populate_buttons(self) -> None:
         rect = pygame.Rect(0, 0, 0, 0)
 
@@ -44,7 +46,6 @@ class Game:
                                                       self.board.get_char(x, y), 
                                                       {"x": x, "y": y})
 
-        self.menu_ui.clear()
         self.menu_ui = ui.UI({
             "size_down"    : ui.Button(rect, "-"),
             "cur_size"     : ui.Button(rect, str(self.board.num_cols)),
@@ -54,9 +55,11 @@ class Game:
             "start_game"   : ui.Button(rect, "START")
         })
 
-        self.end_ui.clear()
-        self.end_ui["victor"]   = ui.Button(rect, "Victor")
-        self.end_ui["new_game"] = ui.Button(rect, "New Game?")
+        self.end_ui = ui.UI({
+            "victor"   : ui.Button(rect, "Victor"),
+            "new_game" : ui.Button(rect, "New Game?"),
+            "quit"     : ui.Button(rect, "Quit?")
+        })
 
     def resize(self) -> None:
         self.size = min(self.surface.get_size())
@@ -97,9 +100,11 @@ class Game:
         self.end_ui["victor"].rect        = rect_center((width * 1/2, height * 1/4),
                                                         (width * 1/4, height * 1/4))
 
-        self.end_ui["new_game"].rect      = rect_center((width * 1/2, height * 3/4),
+        self.end_ui["new_game"].rect      = rect_center((width * 1/4, height * 3/4),
                                                         (width * 1/4, height * 1/4))
 
+        self.end_ui["quit"].rect          = rect_center((width * 3/4, height * 3/4),
+                                                        (width * 1/4, height * 1/4))
 
     def draw_menu(self) -> None:
         self.surface.fill((50, 50, 50))
@@ -183,21 +188,25 @@ class Game:
             self.state = "end"
 
     def end_clicks(self, key: str, button: int = 1) -> None:
-       self.state = "menu" 
+        match key:
+            case "new_game":
+                self.state = "menu"
+            case "quit":
+                self.running = False
 
     def start(self) -> None:
-        running = True
+        self.running = True
 
-        while running:
+        while self.running:
             for e in pygame.event.get():
                 match e.type:
                     case pygame.QUIT:
-                        running = False
+                        self.running = False
 
                     case pygame.KEYDOWN:
                         keys = pygame.key.get_pressed()
                         if keys[pygame.K_q] or keys[pygame.K_ESCAPE]:
-                            running = False
+                            self.running = False
 
                     case pygame.VIDEORESIZE:
                         self.resize()
