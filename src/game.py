@@ -160,7 +160,7 @@ class Game:
                            self.board_ui[f"{sos.p2[0]} {sos.p2[1]}"].rect.center,
                            max(1, self.size / self.board.num_cols * 0.1))
 
-    def menu_clicks(self, key: str, mouse_button: int = 1) -> None:
+    def handle_menu_clicks(self, key: str, mouse_button: int = 1) -> None:
         match key:
             case "size_down":
                 if self.board.num_cols > 3:
@@ -201,20 +201,25 @@ class Game:
                 if self.board.players[0].computer:
                     move = self.board.get_optimal_move(1)
                     next_button = 1 if move.mark == board.Mark.S else 3
-                    self.board_clicks(move.col, move.row, next_button)
+                    self.handle_board_clicks(move.col, move.row, next_button)
 
-    def board_clicks(self, col: int, row: int, button: int = 1) -> None:
-        self.board.make_move((col, row), board.Mark.S if button == 1 else board.Mark.O)
-        self.board_ui[f"{col} {row}"].text = self.board.get_char((col, row))
+    def handle_board_clicks(self, col: int, row: int, button: int) -> None:
+        match button:
+            case 1: mark = board.Mark.S
+            case 3: mark = board.Mark.O
+        self.click_cell((col, row), mark)
+
+        while self.board.get_player().computer and self.state != "end":
+            move = self.board.get_optimal_move(1)
+            self.click_cell((move.col, move.row), move.mark)
+
+    def click_cell(self, pos: Sequence[int], mark: board.Mark) -> None:
+        self.board.make_move(pos, mark)
+        self.board_ui[f"{pos[0]} {pos[1]}"].text = self.board.get_char(pos)
         if self.board.end:
             self.state = "end"
 
-        if self.board.get_player().computer and self.state != "end":
-            move = self.board.get_optimal_move(1)
-            next_button = 1 if move.mark == board.Mark.S else 3
-            self.board_clicks(move.col, move.row, next_button)
-
-    def end_clicks(self, key: str, button: int = 1) -> None:
+    def handle_end_clicks(self, key: str, button: int = 1) -> None:
         match key:
             case "new_game":
                 self.state = "menu"
@@ -246,9 +251,9 @@ class Game:
 
                     case ui.BUTTON_CLICK:
                         match self.state:
-                            case "menu" : self.menu_clicks(e.key, e.mouse_button)
-                            case "play" : self.board_clicks(e.x, e.y, e.mouse_button)
-                            case "end"  : self.end_clicks(e.key, e.mouse_button)
+                            case "menu" : self.handle_menu_clicks(e.key, e.mouse_button)
+                            case "play" : self.handle_board_clicks(e.x, e.y, e.mouse_button)
+                            case "end"  : self.handle_end_clicks(e.key, e.mouse_button)
 
 
             match self.state:
