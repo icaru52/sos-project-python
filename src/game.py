@@ -50,8 +50,10 @@ class Game:
             "size_down"    : ui.Button(rect, "-"),
             "cur_size"     : ui.Button(rect, str(self.board.num_cols)),
             "size_up"      : ui.Button(rect, "+"),
-            "simple_game"  : ui.Button(rect, "Simple Game", {}, True),
-            "general_game" : ui.Button(rect, "General Game", {}, False),
+            "simple_game"  : ui.Button(rect, "Simple Game", {}, self.board.game_mode == "simple"),
+            "general_game" : ui.Button(rect, "General Game", {}, self.board.game_mode == "general"),
+            "player_one"   : ui.Button(rect, "Player One: Human", {}, self.board.players[0].computer),
+            "player_two"   : ui.Button(rect, "Player Two: Human", {}, self.board.players[1].computer),
             "start_game"   : ui.Button(rect, "START")
         })
 
@@ -79,25 +81,29 @@ class Game:
                                 cell_size, 
                                 cell_size))
 
-        self.menu_ui["size_down"].rect    = rect_center((width * 1/6, height * 1/6),
-                                                        (width * 1/6, height * 1/6))
+        self.menu_ui["size_down"].rect    = rect_center((width * 1/6, height * 1/8),
+                                                        (width * 1/8, height * 1/8))
  
-        self.menu_ui["cur_size"].rect     = rect_center((width * 1/2, height * 1/6),
-                                                        (width * 1/6, height * 1/6))
+        self.menu_ui["cur_size"].rect     = rect_center((width * 1/2, height * 1/8),
+                                                        (width * 1/8, height * 1/8))
         
-        self.menu_ui["size_up"].rect      = rect_center((width * 5/6, height * 1/6),
-                                                        (width * 1/6, height * 1/6))
+        self.menu_ui["size_up"].rect      = rect_center((width * 5/6, height * 1/8),
+                                                        (width * 1/8, height * 1/8))
 
-        self.menu_ui["simple_game"].rect  = rect_center((width * 1/4, height * 1/2),
-                                                        (width * 1/4, height * 1/6))
+        self.menu_ui["simple_game"].rect  = rect_center((width * 1/4, height * 3/8),
+                                                        (width * 1/4, height * 1/8))
 
-        self.menu_ui["general_game"].rect = rect_center((width * 3/4, height * 1/2),
-                                                        (width * 1/4, height * 1/6))
+        self.menu_ui["general_game"].rect = rect_center((width * 3/4, height * 3/8),
+                                                        (width * 1/4, height * 1/8))
 
-        self.menu_ui["player_one_computer"]
+        self.menu_ui["player_one"].rect   = rect_center((width * 1/4, height * 5/8),
+                                                        (width * 1/4, height * 1/8))
 
-        self.menu_ui["start_game"].rect   = rect_center((width * 1/2, height * 5/6),
-                                                        (width * 1/2, height * 1/6))
+        self.menu_ui["player_two"].rect   = rect_center((width * 3/4, height * 5/8),
+                                                        (width * 1/4, height * 1/8))
+        
+        self.menu_ui["start_game"].rect   = rect_center((width * 1/2, height * 7/8),
+                                                        (width * 1/2, height * 1/8))
         
         self.end_ui["victor"].rect        = rect_center((width * 1/2, height * 1/4),
                                                         (width * 1/4, height * 1/4))
@@ -177,11 +183,25 @@ class Game:
                 self.menu_ui["simple_game"].clicked = False
                 self.menu_ui["general_game"].clicked = True
             
+            case "player_one":
+                self.board.players[0].computer = not self.board.players[0].computer
+                self.menu_ui["player_one"].clicked = not self.menu_ui["player_one"].clicked
+                self.menu_ui["player_one"].text = "Player One: " + ("Computer" if self.board.players[0].computer else "Human")
+            
+            case "player_two":
+                self.board.players[1].computer = not self.board.players[1].computer
+                self.menu_ui["player_two"].clicked = not self.menu_ui["player_two"].clicked
+                self.menu_ui["player_two"].text = "Player Two: " + ("Computer" if self.board.players[1].computer else "Human")
+            
             case "start_game":
                 self.board.reset()
                 self.populate_buttons()
                 self.resize()
                 self.state = "play"
+                if self.board.players[0].computer:
+                    move = self.board.get_optimal_move(1)
+                    next_button = 1 if move.mark == board.Mark.S else 3
+                    self.board_clicks(move.col, move.row, next_button)
 
     def board_clicks(self, col: int, row: int, button: int = 1) -> None:
         self.board.make_move((col, row), board.Mark.S if button == 1 else board.Mark.O)
@@ -189,9 +209,10 @@ class Game:
         if self.board.end:
             self.state = "end"
 
-        if self.board.get_player.computer:
-            move = self.board.get_optimal_move()
-            self.board_clicks(move.col, move.row, move.mark)
+        if self.board.get_player().computer and self.state != "end":
+            move = self.board.get_optimal_move(1)
+            next_button = 1 if move.mark == board.Mark.S else 3
+            self.board_clicks(move.col, move.row, next_button)
 
     def end_clicks(self, key: str, button: int = 1) -> None:
         match key:

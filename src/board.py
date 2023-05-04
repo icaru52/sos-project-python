@@ -115,7 +115,7 @@ class Move(NamedTuple):
     col: int
     row: int
     mark: Mark
-    player: int
+    player: int = -1
     sos_count: int = 0
 
 class Board:
@@ -288,25 +288,28 @@ class Board:
         idx = -1
         mark = Mark.NONE
         while mark != Mark.EMPTY:
-            idx, mark = random.choice(enumerate(self.grid))
+            idx, mark = random.choice(tuple(enumerate(self.grid)))
         return (idx % self.num_cols, math.floor(idx / self.num_cols))
 
-    def get_optimal_move(self) -> Move:
-        test_board = deepcopy(self)
-
+    def get_optimal_move(self, depth: int = 0) -> Move:
         best_score = 0
         best_move = None
 
-        for row in test_board.num_rows:
-            for col in test_board.num_cols:
-                if test_board.get_mark((col, row)) == Mark.EMPTY:
-                    for mark in (mark.S, Mark.O):
+        for row in range(self.num_rows):
+            for col in range(self.num_cols):
+                if self.get_mark((col, row)) == Mark.EMPTY:
+                    for mark in (Mark.S, Mark.O):
                         
-                        sos_list = test_board.creates_sos((col, row), mark)
-                        move = Move(col, row, mark, test_board.turn, len(sos_list))
-                        
+                        sos_list = self.creates_sos((col, row), mark)
+                        move = Move(col, row, mark, self.turn, len(sos_list))
+
+                        if depth > 0:
+                            test_board = deepcopy(self)
+                            test_board.make_move((col, row), mark)
+                            next_move = test_board.get_optimal_move(depth - 1)
+
                         if move.sos_count > best_score:
-                            match test_board.game_mode:
+                            match self.game_mode:
                                 case "simple":
                                     return move
                                 
@@ -315,12 +318,13 @@ class Board:
                                     best_move = move
 
         if best_move is None:
-            return self.get_random_legal_position()
+            pos = self.get_random_legal_position()
+            return Move(pos[0], pos[1], random.choice([Mark.S, Mark.O]))
         else:
             return best_move
 
     def make_computer_move(self) -> None:
-        move = self.get_optimal_move()
+        move = self.get_optimal_move(1)
         self.make_move(move.col, move.row, move.mark)
 
     def get_next_turn(self) -> int:
