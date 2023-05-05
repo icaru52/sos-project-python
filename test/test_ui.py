@@ -5,4 +5,4 @@
 """tests for my custom graphical user interface class"""
 
 import unittest
-import ui
+from src import ui

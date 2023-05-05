@@ -3,7 +3,7 @@
 # Programmer: Ian Rowse <imrnnc@umsystem.edu>
 
 import unittest
-import pygame_helper
+from src import pygame_helper
 
 
 

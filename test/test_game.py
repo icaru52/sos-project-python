@@ -3,7 +3,7 @@
 # Programmer: Ian Rowse <imrnnc@umsystem.edu>
 
 import unittest
-import game
+from src import game
 
 
 
