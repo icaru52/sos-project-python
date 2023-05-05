@@ -198,7 +198,7 @@ class Game:
                 self.populate_buttons()
                 self.resize()
                 self.state = "play"
-                if self.board.players[0].computer:
+                if self.board.players[0].computer and not self.board.end:
                     move = self.board.get_optimal_move(1)
                     next_button = 1 if move.mark == board.Mark.S else 3
                     self.handle_board_clicks(move.col, move.row, next_button)

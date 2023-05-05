@@ -125,7 +125,7 @@ class Board:
                  num_rows: int = 8,
                  players: list[Player] = None) -> None:
 
-        if num_cols <= 3 or num_rows <= 3:
+        if num_cols < 3 or num_rows < 3:
             raise ValueError("board dimensions must be greater than or equal to 3x3")
 
         elif players == []:
@@ -134,6 +134,7 @@ class Board:
         self.num_cols = num_cols
         self.num_rows = num_rows
         self.grid = [Mark.EMPTY] * (num_cols * num_rows)
+        #self.empty_cells = 
         self.mark_count = 0
 
         if players is None:
@@ -203,8 +204,10 @@ class Board:
 
         else:
             if mark > self.get_mark(pos):
+                #self.empty_cells.discard(tuple(pos))
                 self.mark_count += 1
             elif mark < self.get_mark(pos):
+                #self.empty_cells.add(tuple(pos))
                 self.mark_count -= 1
 
             self.grid[(pos[1] * self.num_cols) + pos[0]] = mark
@@ -284,50 +287,59 @@ class Board:
                                             self.turn))
         return sos_list
 
-    def get_random_legal_position(self) -> tuple[int, int]:
-        idx = -1
-        mark = Mark.NONE
-        while mark != Mark.EMPTY:
-            idx, mark = random.choice(tuple(enumerate(self.grid)))
-        return (idx % self.num_cols, math.floor(idx / self.num_cols))
-
-    def get_optimal_move(self, depth: int = 0) -> Move:
-        best_score = -9
-        best_moves = []
-
-        for row in range(self.num_rows):
+    def get_empty_cells(self) -> list[tuple[int]]:
+        empty_cells = []
+        for row in range(self.num_rows):     
             for col in range(self.num_cols):
                 if self.get_mark((col, row)) == Mark.EMPTY:
-                    for mark in (Mark.S, Mark.O):
-                        
-                        expected_gain = len(self.creates_sos((col, row), mark))
+                    empty_cells.append((col, row))
+        return empty_cells
 
-                        if self.game_mode == "simple" and expected_gain > 0:
-                            return Move(col, row, mark, expected_gain)
 
-                        if depth > 0:
-                            test_board = deepcopy(self)
-                            test_board.make_move((col, row), mark)
+    def get_random_legal_position(self) -> tuple[int, int]:
+        return random.choice(self.get_empty_cells())
 
-                            expected_loss = test_board.get_optimal_move(depth - 1).sos_count
-                        else:
-                            expected_loss = 0
+    def get_optimal_move(self, depth: int = 0) -> Move:
+        if self.mark_count == len(self.grid):
+            return None
+        
+        else:
+            best_score = -9
+            best_moves = []
 
-                        if self.game_mode == "simple":
-                            if not expected_loss > 0:
-                                best_moves.append(Move(col, row, mark, 0))
-                            continue
+            for row in range(self.num_rows):
+                for col in range(self.num_cols):
+                    if self.get_mark((col, row)) == Mark.EMPTY:
+                        for mark in (Mark.S, Mark.O):
+                            
+                            expected_gain = len(self.creates_sos((col, row), mark))
 
-                        else:
-                            expected_score = expected_gain - expected_loss
+                            if self.game_mode == "simple" and expected_gain > 0:
+                                return Move(col, row, mark, expected_gain)
 
-                            if expected_score >= best_score:
-                                if expected_score > best_score:
-                                    best_score = expected_score
-                                    best_moves.clear()
-                                best_moves.append(Move(col, row, mark, expected_score))
+                            if depth > 0:
+                                test_board = deepcopy(self)
+                                test_board.make_move((col, row), mark)
 
-        return random.choice(best_moves)
+                                expected_loss = test_board.get_optimal_move(depth - 1).sos_count
+                            else:
+                                expected_loss = 0
+
+                            if self.game_mode == "simple":
+                                if not expected_loss > 0:
+                                    best_moves.append(Move(col, row, mark, 0))
+                                continue
+
+                            else:
+                                expected_score = expected_gain# - expected_loss
+
+                                if expected_score >= best_score:
+                                    if expected_score > best_score:
+                                        best_score = expected_score
+                                        best_moves.clear()
+                                    best_moves.append(Move(col, row, mark, expected_score))
+
+            return random.choice(best_moves)
 
     def make_computer_move(self) -> None:
         move = self.get_optimal_move(1)
