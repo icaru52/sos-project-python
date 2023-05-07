@@ -345,6 +345,7 @@ class Board:
                                 continue
 
                             else:
+                                #TODO: explore this
                                 expected_score = expected_gain# - expected_loss
 
                                 if expected_score >= best_score:

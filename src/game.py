@@ -12,7 +12,8 @@ import board
 from pygame_helper import *
 import ui
 
-MAKE_MOVE = pygame.event.custom_type()
+class GameEvents:
+    MAKE_MOVE = pygame.event.custom_type()
 
 class Game:
     """GUI for displaying and interacting with SOS game board"""
@@ -216,21 +217,11 @@ class Game:
                 self.populate_buttons()
                 self.resize()
                 self.state = "play"
-                if self.board.players[0].computer and not self.board.end:
-                    move = self.board.get_optimal_move(1)
-                    next_button = 1 if move.mark == board.Mark.S else 3
-                    self.handle_board_clicks(move.col, move.row, next_button)
 
     def handle_board_clicks(self, col: int, row: int, button: int) -> None:
-        match button:
-            case 1: mark = board.Mark.S
-            case 3: mark = board.Mark.O
-        self.click_cell((col, row), mark)
-        #pygame.event.post(pygame.event.Event(MAKE_MOVE, col, row, mark))
-
-        while self.board.get_player().computer and self.state != "end":
-            move = self.board.get_optimal_move(1)
-            self.click_cell((move.col, move.row), move.mark)
+        attrs = {"pos": (col, row), 
+                 "mark": board.Mark.S if button == 1 else board.mark.O}
+        pygame.event.post(pygame.event.Event(GameEvents.MAKE_MOVE, attrs))
 
     def click_cell(self, pos: Sequence[int], mark: board.Mark) -> None:
         self.board.make_move(pos, mark)
@@ -249,6 +240,11 @@ class Game:
         self.running = True
 
         while self.running:
+            if self.board.get_player().computer and self.state != "end":
+                move = self.board.get_optimal_move(1)
+                attrs = {"pos": (move.col, move.row), "mark": move.mark}
+                pygame.event.post(pygame.event.Event(GameEvents.MAKE_MOVE, attrs))
+
             for e in pygame.event.get():
                 match e.type:
                     case pygame.QUIT:
@@ -274,8 +270,8 @@ class Game:
                             case "play" : self.handle_board_clicks(e.x, e.y, e.mouse_button)
                             case "end"  : self.handle_end_clicks(e.key, e.mouse_button)
 
-                    case MAKE_MOVE:
-                        self.click_cell(e.x, e.y, e.mark)
+                    case GameEvents.MAKE_MOVE:
+                        self.click_cell(e.pos, e.mark)
 
 
             match self.state:
