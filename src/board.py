@@ -146,6 +146,7 @@ class Board:
         self.turn = 0
 
         self.move_hist = []
+        self.move_future = []
 
         self.game_mode = "simple"
 
@@ -215,8 +216,9 @@ class Board:
     def clear(self) -> None:
         self.grid = [Mark.EMPTY] * (self.num_cols * self.num_rows)
         self.mark_count = 0
-        self.sos_list = []
-        self.move_hist = []
+        self.sos_list.clear()
+        self.move_hist.clear()
+        self.move_future.clear()
         for player in self.players:
             player.score = 0
 
@@ -234,6 +236,7 @@ class Board:
 
             self.move_hist.append(
                     Move(pos[0], pos[1], mark, len(new_sos_list), self.turn))
+            self.move_future.clear()
 
             if self.detect_end():
                 self.end = True
@@ -250,6 +253,13 @@ class Board:
             self.set_mark((last_move.col, last_move.row), Mark.EMPTY)
             del self.sos_list[-last_move.sos_count:]
             self.players[last_move.player].score -= last_move.sos_count
+            self.turn = (self.turn - 1) % len(self.players)
+            self.move_future.append(last_move)
+
+    def save(self, file: str = "sos.sav") -> None:
+        f = open('file', 'w')
+        f.write(repr(self.move_hist))
+        f.close()
 
     # Assumes that col and row are in bounds
     # Assumes that the space is empty
@@ -320,8 +330,12 @@ class Board:
                             if depth > 0:
                                 test_board = deepcopy(self)
                                 test_board.make_move((col, row), mark)
+                                next_move = test_board.get_optimal_move(depth - 1)
 
-                                expected_loss = test_board.get_optimal_move(depth - 1).sos_count
+                                if next_move is None:
+                                    expected_loss = 0
+                                else:
+                                    expected_loss = next_move.sos_count
                             else:
                                 expected_loss = 0
 

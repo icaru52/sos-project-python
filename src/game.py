@@ -12,6 +12,7 @@ import board
 from pygame_helper import *
 import ui
 
+MAKE_MOVE = pygame.event.custom_type()
 
 class Game:
     """GUI for displaying and interacting with SOS game board"""
@@ -50,10 +51,27 @@ class Game:
             "size_down"    : ui.Button(rect, "-"),
             "cur_size"     : ui.Button(rect, str(self.board.num_cols)),
             "size_up"      : ui.Button(rect, "+"),
-            "simple_game"  : ui.Button(rect, "Simple Game", {}, self.board.game_mode == "simple"),
-            "general_game" : ui.Button(rect, "General Game", {}, self.board.game_mode == "general"),
-            "player_one"   : ui.Button(rect, "Player One: Human", {}, self.board.players[0].computer),
-            "player_two"   : ui.Button(rect, "Player Two: Human", {}, self.board.players[1].computer),
+            
+            "simple_game"  : ui.Button(rect, 
+                                       "Simple Game", 
+                                       {}, 
+                                       self.board.game_mode == "simple"),
+            
+            "general_game" : ui.Button(rect, 
+                                       "General Game", 
+                                       {}, 
+                                       self.board.game_mode == "general"),
+            
+            "player_one"   : ui.Button(rect, 
+                                       "Player One: Human", 
+                                       {}, 
+                                       self.board.players[0].computer),
+            
+            "player_two"   : ui.Button(rect, 
+                                       "Player Two: Human", 
+                                       {}, 
+                                       self.board.players[1].computer),
+
             "start_game"   : ui.Button(rect, "START")
         })
 
@@ -208,6 +226,7 @@ class Game:
             case 1: mark = board.Mark.S
             case 3: mark = board.Mark.O
         self.click_cell((col, row), mark)
+        #pygame.event.post(pygame.event.Event(MAKE_MOVE, col, row, mark))
 
         while self.board.get_player().computer and self.state != "end":
             move = self.board.get_optimal_move(1)
@@ -254,6 +273,9 @@ class Game:
                             case "menu" : self.handle_menu_clicks(e.key, e.mouse_button)
                             case "play" : self.handle_board_clicks(e.x, e.y, e.mouse_button)
                             case "end"  : self.handle_end_clicks(e.key, e.mouse_button)
+
+                    case MAKE_MOVE:
+                        self.click_cell(e.x, e.y, e.mark)
 
 
             match self.state:
