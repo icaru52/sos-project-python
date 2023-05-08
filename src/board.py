@@ -19,6 +19,9 @@ class Mark(Enum):
     S     = 2
     O     = 3
 
+    def __repr__(self):
+        return f"Mark({self.value})"
+
     def __lt__(self, other) -> bool:
         """NONE < EMPTY < S == O"""
         if self.__class__ is not other.__class__:
@@ -105,15 +108,14 @@ class Player:
             self.computer = computer
 
     def __repr__(self) -> None:
-        return f"Player({self.name}, {self.hue})"
+        return f"Player(\"{self.name}\", {self.hue}, {self.computer})"
 
     def __str__(self) -> None:
         return f"({self.name} has hue {self.hue} and has {self.score} points)"
 
 
 class Move(NamedTuple):
-    col: int
-    row: int
+    pos: Sequence[int]
     mark: Mark
     sos_count: int = 0
     player: int = -1
@@ -121,19 +123,19 @@ class Move(NamedTuple):
 class Board:
     """SOS game."""
     def __init__(self,
-                 num_cols: int = 8,
-                 num_rows: int = 8,
+                 size: list[int] = None,
                  players: list[Player] = None) -> None:
 
-        if num_cols < 3 or num_rows < 3:
+        if size is None:
+            size = [8, 8]
+        elif size[0] < 3 or size[1] < 3:
             raise ValueError("board dimensions must be greater than or equal to 3x3")
 
-        elif players == []:
+        if players == []:
             raise ValueError("must specify at least one player")
 
-        self.num_cols = num_cols
-        self.num_rows = num_rows
-        self.grid = [Mark.EMPTY] * (num_cols * num_rows)
+        self.size = size
+        self.grid = [Mark.EMPTY] * math.prod(size)
         #self.empty_cells = 
         self.mark_count = 0
 
@@ -153,13 +155,13 @@ class Board:
         self.end = False
 
     def __repr__(self) -> None:
-        return f"Board({self.num_cols}, {self.num_rows}, {self.players!r})"
+        return f"Board({self.size}, {self.players!r})"
 
     def __str__(self) -> None:
-        temp = " " + "-" * self.num_cols + "\n"
-        for y in range(self.num_rows):
+        temp = " " + "-" * self.size[0] + "\n"
+        for y in range(self.size[1]):
             temp += "|"
-            for x in range(self.num_cols):
+            for x in range(self.size[0]):
                 match self.get_mark((x, y)):
                     case Mark.EMPTY:
                         temp += " "
@@ -168,19 +170,19 @@ class Board:
                     case Mark.O:
                         temp += "O"
             temp += "|\n"
-        temp += " " + "-" * self.num_cols
+        temp += " " + "-" * self.size[0]
         return temp
 
     def in_bounds(self, pos: Sequence[int]) -> bool:
-        return (0 <= pos[0] < self.num_cols and
-                0 <= pos[1] < self.num_rows)
+        return (0 <= pos[0] < self.size[0] and
+                0 <= pos[1] < self.size[1])
 
     def out_of_bounds(self, pos: Sequence[int]) -> bool:
         return not self.in_bounds(pos)
 
     def get_mark(self, pos: Sequence[int] = None) -> Mark:
         if self.in_bounds(pos):
-            return self.grid[(pos[1] * self.num_cols) + pos[0]]
+            return self.grid[(pos[1] * self.size[0]) + pos[0]]
         else:
             return Mark.NONE
 
@@ -211,10 +213,10 @@ class Board:
                 #self.empty_cells.add(tuple(pos))
                 self.mark_count -= 1
 
-            self.grid[(pos[1] * self.num_cols) + pos[0]] = mark
+            self.grid[(pos[1] * self.size[0]) + pos[0]] = mark
 
     def clear(self) -> None:
-        self.grid = [Mark.EMPTY] * (self.num_cols * self.num_rows)
+        self.grid = [Mark.EMPTY] * math.prod(self.size)
         self.mark_count = 0
         self.sos_list.clear()
         self.move_hist.clear()
@@ -234,9 +236,14 @@ class Board:
             self.get_player().score += len(new_sos_list)
             self.sos_list.extend(new_sos_list)
 
-            self.move_hist.append(
-                    Move(pos[0], pos[1], mark, len(new_sos_list), self.turn))
-            self.move_future.clear()
+            move = Move(pos, mark, len(new_sos_list), self.turn)
+            self.move_hist.append(move)
+            if not self.move_future:
+               pass 
+            elif self.move_future[-1] == move:
+                self.move_future.pop(-1)
+            else:
+                self.move_future.clear()
 
             if self.detect_end():
                 self.end = True
@@ -250,16 +257,37 @@ class Board:
     def undo_move(self) -> None:
         if len(self.move_hist) > 0:
             last_move = self.move_hist.pop(-1)
-            self.set_mark((last_move.col, last_move.row), Mark.EMPTY)
+            self.set_mark(last_move.pos, Mark.EMPTY)
             del self.sos_list[-last_move.sos_count:]
             self.players[last_move.player].score -= last_move.sos_count
             self.turn = (self.turn - 1) % len(self.players)
             self.move_future.append(last_move)
 
-    def save(self, file: str = "sos.sav") -> None:
-        f = open('file', 'w')
-        f.write(repr(self.move_hist))
-        f.close()
+    def redo_move(self) -> None:
+        if len(self.move_future) > 0:
+            next_move = self.move_future[-1]
+            self.make_move(next_move.pos, next_move.mark)
+
+
+    def save(self, file_path: str = "sos.sav") -> None:
+        with open(file_path, "w") as file:
+            file.write(repr(self.size)+"\n")
+            file.write(repr(self.game_mode)+"\n")
+            file.write(repr(self.players)+"\n")
+            file.write(repr(self.move_hist)+"\n")
+            file.write(repr(self.move_future)+"\n")
+
+    def load(self, file_path: str = "sos.sav") -> None:
+        with open(file_path, "r") as file:
+            self.size = eval(file.readline())
+            self.clear()
+            
+            self.game_mode   = eval(file.readline())
+            self.players     = eval(file.readline())
+
+            move_hist        = eval(file.readline())
+            move_future      = eval(file.readline())
+            self.move_future = move_future.extend(move_hist.reverse())
 
     # Assumes that col and row are in bounds
     # Assumes that the space is empty
@@ -299,8 +327,8 @@ class Board:
 
     def get_empty_cells(self) -> list[tuple[int]]:
         empty_cells = []
-        for row in range(self.num_rows):     
-            for col in range(self.num_cols):
+        for row in range(self.size[1]):     
+            for col in range(self.size[0]):
                 if self.get_mark((col, row)) == Mark.EMPTY:
                     empty_cells.append((col, row))
         return empty_cells
@@ -314,47 +342,174 @@ class Board:
             return None
         
         else:
+            empty_cells = self.get_empty_cells()
             best_score = -9
+            #worst_score = 9
+            most_gain = 0
+            #least_gain = 0
+            #most_loss = 0
+            #least_loss = 0
+
             best_moves = []
 
-            for row in range(self.num_rows):
-                for col in range(self.num_cols):
-                    if self.get_mark((col, row)) == Mark.EMPTY:
-                        for mark in (Mark.S, Mark.O):
+            for pos in empty_cells:
+                for mark in (Mark.S, Mark.O):
+                    
+                    expected_gain = len(self.creates_sos(pos, mark))
+
+                    if self.game_mode == "simple" and expected_gain > 0:
+                        return Move(pos, mark, expected_gain)
+
+                    if depth > 0:
+                        test_board = deepcopy(self)
+                        test_board.make_move(pos, mark)
+                        next_move = test_board.get_optimal_move(depth - 1)
+
+                        if next_move is None:
+                            expected_loss = 0
+                        else:
+                            expected_loss = next_move.sos_count
+                    else:
+                        expected_loss = 0
+
+                    if self.game_mode == "simple":
+                        if not expected_loss > 0:
+                            best_moves.append(Move(pos, mark, 0))
+                        continue
+
+                    else:
+                        expected_score = expected_gain - expected_loss
+
+                        if (expected_score >  best_score or 
+                            (expected_score == best_score and 
+                             expected_gain  >  most_gain)):
                             
-                            expected_gain = len(self.creates_sos((col, row), mark))
+                            best_score = expected_score
+                            most_gain = expected_gain
+                            best_moves.clear()
 
-                            if self.game_mode == "simple" and expected_gain > 0:
-                                return Move(col, row, mark, expected_gain)
+                        if (expected_score >  best_score or 
+                           (expected_score == best_score and 
+                            expected_gain  >= most_gain)):
+                            
+                            best_moves.append(Move(pos, mark, expected_score))
 
-                            if depth > 0:
-                                test_board = deepcopy(self)
-                                test_board.make_move((col, row), mark)
-                                next_move = test_board.get_optimal_move(depth - 1)
+                        """
+                        if (expected_score >  best_score or 
+                           (expected_score == best_score and 
+                            expected_gain  >= best_gain)):
+                            #add
 
-                                if next_move is None:
-                                    expected_loss = 0
-                                else:
-                                    expected_loss = next_move.sos_count
-                            else:
-                                expected_loss = 0
+                        if (expected_score >  best_score or 
+                           (expected_score == best_score and 
+                            expected_gain  >  best_gain)):
+                            #replace
+                        """
 
-                            if self.game_mode == "simple":
-                                if not expected_loss > 0:
-                                    best_moves.append(Move(col, row, mark, 0))
-                                continue
+                        """
+                        if   expected_score >  best_score:
+                            #add
+                        elif expected_score == best_score and expected_gain >=  best_gain:
+                            #add
+                        else:
+                            #no
 
-                            else:
-                                #TODO: explore this
-                                expected_score = expected_gain# - expected_loss
+                        if   expected_score >  best_score:
+                            #replace
+                        elif expected_score == best_score and expected_gain >  best_gain:
+                            #replace
+                        else:
+                            #no
+                        """
 
-                                if expected_score >= best_score:
-                                    if expected_score > best_score:
-                                        best_score = expected_score
-                                        best_moves.clear()
-                                    best_moves.append(Move(col, row, mark, expected_score))
+                        """
+                        if   expected_score >  best_score:
+                            #add
+                            #replace
 
-            return random.choice(best_moves)
+                        elif expected_score == best_score and expected_gain >  best_gain:
+                            #add
+                            #replace
+                        elif expected_score == best_score and expected_gain == best_gain:
+                            #add
+                        elif expected_score == best_score and expected_gain <  best_gain:
+                            #no
+                            pass
+
+                        elif expected_score <  best_score:
+                            #no
+                            pass
+                        """
+
+                        """
+                        if   expected_score >  best_score and expected_gain >  best_gain:
+                            #add
+                            #replace
+                        elif expected_score >  best_score and expected_gain == best_gain:
+                            #add
+                            #replace
+                        elif expected_score >  best_score and expected_gain <  best_gain:
+                            #add
+                            #replace
+
+                        elif expected_score == best_score and expected_gain >  best_gain:
+                            #add
+                            #replace
+                        elif expected_score == best_score and expected_gain == best_gain:
+                            #add
+                        elif expected_score == best_score and expected_gain <  best_gain:
+                            #no
+                            pass
+
+                        elif expected_score <  best_score and expected_gain >  best_gain:
+                            #no
+                            pass
+                        elif expected_score <  best_score and expected_gain == best_gain:
+                            #no
+                            pass
+                        elif expected_score <  best_score and expected_gain <  best_gain:
+                            #no
+                            pass
+                        """
+
+                        """
+                        if expected_score > best_score:
+
+                            best_score = expected_score
+                            most_gain = expected_gain
+                            best_moves.clear()
+
+                            best_moves.append(Move(pos, mark, expected_score))
+
+                        if expected_score == best_score:
+
+                            if expected_gain >= best_gain:
+                                if (expected_gain > best_gain or 
+                                    expected_score > best_score):
+
+                                    best_score = expected_score
+                                    most_gain = expected_gain
+                                    best_moves.clear()
+                                    best_moves.append(Move(pos, mark, expected_score))
+
+                                best_moves.append(Move(pos, mark, expected_score))
+                        """
+                        """
+                        if expected_score >= best_score:
+                            if (expected_score > best_score or 
+                                expected_gain > most_gain):
+
+                                best_score = expected_score
+                                most_gain = expected_gain
+                                best_moves.clear()
+                            best_moves.append(Move(pos, mark, expected_score))
+                        """
+
+            if best_moves:
+                return random.choice(best_moves)
+            else:
+                return Move(random.choice(empty_cells), 
+                            random.choice((Mark.S, Mark.O)))
 
     def make_computer_move(self) -> None:
         move = self.get_optimal_move(1)
@@ -367,7 +522,7 @@ class Board:
         return self.players[self.turn]
 
     def general_end(self) -> bool:
-        return self.mark_count == self.num_cols * self.num_rows
+        return self.mark_count == math.prod(self.size)
 
     def simple_end(self) -> bool:
         return len(self.sos_list) > 0 or self.general_end()
@@ -406,13 +561,10 @@ class Board:
             case _: raise NotImplementedError(f"Game mode {self.game_mode} does not exist.")
 
     def reset(self,
-              num_cols: int = -1, 
-              num_rows: int = -1, 
+              size: list[int] = None,
               game_mode: str = None) -> None:
-        
-        if num_cols >= 3 and num_rows >= 3:
-            self.num_cols = num_cols
-            self.num_rows = num_rows
+        if (not size is None) and num_cols >= 3 and num_rows >= 3:
+            self.size = size
         
         self.clear()
         self.turn = 0
