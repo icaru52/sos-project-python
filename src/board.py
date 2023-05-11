@@ -228,8 +228,7 @@ class Board:
     def make_move(self, pos: Sequence[int], mark: Mark) -> bool:
         if mark <= Mark.EMPTY:
             raise ValueError("player cannot set a mark to empty")
-
-        elif self.get_mark(pos) == Mark.EMPTY:
+        elif not self.end and self.get_mark(pos) == Mark.EMPTY:
             self.set_mark(pos, mark)
 
             new_sos_list = self.creates_sos(pos, mark)
